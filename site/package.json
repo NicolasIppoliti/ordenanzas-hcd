@@ -7,8 +7,7 @@
     "dev": "astro dev",
     "test": "vitest run",
     "check": "astro check && tsc --noEmit",
-    "build": "astro build",
-    "build:search": "pagefind --site dist"
+    "build": "astro build && pagefind --site dist"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.2.1",
