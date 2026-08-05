@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_run_at": "2026-08-05T21:51:48Z",
+  "last_run_at": "2026-08-05T23:19:15Z",
   "last_run_status": "ok",
-  "last_success_at": "2026-08-05T21:51:48Z",
+  "last_success_at": "2026-08-05T23:19:15Z",
   "documents_total": 1038,
   "documents_added_last_run": 0,
   "staleness_threshold_days": 30,
