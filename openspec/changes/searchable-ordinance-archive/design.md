@@ -153,9 +153,12 @@ been measured again.
 The decision is unchanged and unthreatened — 7.57 MB is still **6.6x under** the 50 MB
 threshold, and git packs prose several times over. Corpus growth is ~1.3 documents a week.
 
-**The outliers are the fiscal ordinances, and they matter for the page budget.** Eleven
-documents (1% of the corpus) carry more than 50 KB of text; the largest,
-`4270-D-138-2023-Fiscal-e-Impositiva-2024`, is **207 pages and 708 KB**. The other four in
+**The outliers are the fiscal ordinances, and they matter for the page budget.** Nine
+documents carry more than 50 KB of extracted text — an earlier count of eleven measured the
+committed JSON file size, envelope included, rather than the `text` field itself; the
+largest,
+`4270-D-138-2023-Fiscal-e-Impositiva-2024`, is **207 pages and 692 KB of text**, rendering to a 703 KB page that
+gzips to 189 KB — measured, and close to the 180 KB predicted. The other four in
 the top five are the same document from other years. That single page would ship ~180 KB
 gzipped, more than the Next.js baseline D1 rejected. Truncation is not an option — the full
 body is what `data-pagefind-body` indexes, and a resident looking up a tariff needs the
@@ -1067,8 +1070,11 @@ Notice copy (Spanish, `role="status"`):
 **Slice-ordering correction, found while applying slice 1.** Two of these pieces cannot run
 on a site that has no pages yet, and both fail hard rather than degrading:
 
-- `@astrojs/sitemap` throws `Cannot read properties of undefined (reading 'reduce')` in
-  `astro:build:done` on a zero-route build (reproduced on 3.7.3, the current release).
+- `@astrojs/sitemap` 3.7.3 crashes in `astro:build:done` against Astro 4.16. The original
+  diagnosis here — "it crashes on a zero-route build" — was **wrong**: it crashes with 1,038
+  routes too, because 3.7.3 depends on an `astro:routes:resolved` hook that Astro 4.16 does
+  not implement. The zero-route build merely made it visible first. Pinning `3.2.1` fixes it
+  at any route count.
 - `pagefind` exits 1 with "not able to build an index" when `dist/` contains no HTML.
 
 Neither is worked around. The `build` script ships as `astro build` alone from slice 1, with

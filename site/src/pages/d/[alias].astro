@@ -1,0 +1,40 @@
+---
+// D11: one static redirect page per published-then-moved doc_id. Astro's
+// static output has no server, so this IS the redirect mechanism.
+// resolveAliases() throws — and therefore fails `astro build` — the moment
+// any alias targets a doc_id absent from the manifest.
+import { getDocuments } from '../../lib/data';
+import { loadAliasMap, resolveAliases } from '../../lib/aliases';
+import type { Alias } from '../../lib/contract';
+
+export async function getStaticPaths() {
+  const documents = getDocuments();
+  const aliasMap = loadAliasMap();
+  const aliases = resolveAliases(aliasMap, documents);
+  return aliases.map((alias) => ({
+    params: { alias: alias.alias },
+    props: { alias },
+  }));
+}
+
+interface Props {
+  alias: Alias;
+}
+
+const { alias } = Astro.props as Props;
+const targetUrl = `/documento/${alias.target}`;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${targetUrl}`} />
+    <link rel="canonical" href={targetUrl} />
+    <title>Redirigiendo…</title>
+  </head>
+  <body data-pagefind-ignore>
+    <p>Este documento ahora está en otra dirección.</p>
+    <p><a href={targetUrl}>Ir al documento</a></p>
+  </body>
+</html>

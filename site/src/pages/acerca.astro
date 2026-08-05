@@ -1,0 +1,25 @@
+---
+// D12: states plainly, in neutral Spanish, that the listing includes
+// non-ordinance documents, and that nothing is added, removed or
+// reclassified. No framing beyond the factual statement.
+import Layout from '../components/Layout.astro';
+import { getDocuments } from '../lib/data';
+
+const documents = getDocuments();
+const total = documents.length.toLocaleString('es-AR');
+---
+
+<Layout title="Acerca de este archivo" description="Qué es este archivo y de dónde salen los datos.">
+  <h1>Acerca de este archivo</h1>
+  <p>
+    Este archivo reproduce el listado «Ordenanzas» del HCD de Coronel Rosales tal como está
+    publicado. Ese listado incluye documentos que no son ordenanzas —convenios, decretos,
+    resoluciones, anexos y actas preparatorias—, por eso este sitio habla de «documentos». No se
+    agrega, quita ni reclasifica nada.
+  </p>
+  <p>El archivo contiene {total} documentos.</p>
+  <p>
+    Esta es una herramienta de consulta no oficial, publicada por Fragua. Ante cualquier
+    discrepancia entre este archivo y el PDF oficial del HCD, prevalece el PDF oficial.
+  </p>
+</Layout>

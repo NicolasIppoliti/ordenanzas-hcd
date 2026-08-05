@@ -1,0 +1,27 @@
+---
+// Two staleness layers (design.md "Sync mechanics"): this component
+// renders the build-time verdict from `computeStaleness`, then a ~300-byte
+// inline script (STALENESS_CLIENT_SCRIPT) recomputes at view time and may
+// only ADD the notice, never remove one already rendered.
+import { computeStaleness, STALENESS_CLIENT_SCRIPT } from '../lib/staleness';
+
+interface Props {
+  lastSuccessAt: string;
+  thresholdDays: number;
+}
+
+const { lastSuccessAt, thresholdDays } = Astro.props;
+const state = computeStaleness(lastSuccessAt, thresholdDays);
+---
+
+<p
+  id="staleness-notice"
+  role="status"
+  data-last-success={lastSuccessAt}
+  data-threshold={thresholdDays}
+  hidden={!state.isStale}
+>
+  Este archivo no se sincroniza desde hace más de {thresholdDays} días. Consulte el PDF oficial
+  del HCD.
+</p>
+<script is:inline set:html={STALENESS_CLIENT_SCRIPT} />
