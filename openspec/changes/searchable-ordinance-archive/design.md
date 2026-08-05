@@ -343,6 +343,18 @@ then iterated with `finditer`. This is a required test case.
 - Self-reference (including the sanction header `O R D E N A N Z A 4457` after whitespace
   normalisation) → dropped by discarding any candidate equal to the document's own number.
 
+**Measured on the full corpus, 2026-08-05.** 751 references were detected: **421 resolved
+and became links, 330 did not**. Zero of the 330 point to a number that exists in the
+manifest, so the gate is behaving exactly as specified — the unresolved half is not a
+detection defect, it is the source's own incompleteness. The HCD publishes 943 distinct
+ordinance numbers across a range spanning 2,459 (1999–4457), i.e. **38% of the number
+space**. An ordinance can and does cite an ordinance the HCD never put online.
+
+That is why the rule below is stated as resolve-or-do-not-link rather than as a coverage
+target. A visitor will see reference numbers in the body text that are not links; that is
+the truth, and inventing a link to a document this archive does not hold would be worse
+than the gap it papers over.
+
 **Manifest-resolution rule — the single highest-leverage precision control:** a candidate
 renders as a link **only** if its number resolves to **at least one** manifest entry whose
 status is `ok` or `no_text`. Unresolvable numbers are written to
