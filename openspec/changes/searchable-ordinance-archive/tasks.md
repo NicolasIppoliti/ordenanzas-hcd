@@ -201,6 +201,7 @@ in this PR opens a socket.
 - [ ] 4a.10 TEST: an alias whose target is absent from the manifest **fails `astro build`** with a message naming the alias and its missing target; assert no page is emitted and the miss is not skipped silently
 - [ ] 4a.11 TEST: `axe-core`+`happy-dom` on index/detail-with-title/detail-null-title/detail-convenio
 - [ ] 4a.12 Verify `astro build` emits one page per manifest record (1,038) plus one page per alias, 0 JS beyond staleness script, ≤20KB chrome/page, whole-page p95 ≤50KB with the observed max recorded
+- [ ] 4a.12a Decide and implement how the 11 documents over 50 KB of text render (largest: 207 pages, 708 KB, the 2024 fiscal ordinance). The full body MUST stay in the DOM so Pagefind indexes it; progressive disclosure that keeps it there is acceptable, truncation is not. Verify the other 1,027 pages are unaffected
 - [ ] 4a.13 Enable `@astrojs/sitemap` in `site/astro.config.mjs` (`integrations: [sitemap()]`); deferred from slice 1 because it crashes on a zero-route build. Verify `dist/sitemap-index.xml` is emitted
 
 ## Phase 4b: Search (PR4b)
