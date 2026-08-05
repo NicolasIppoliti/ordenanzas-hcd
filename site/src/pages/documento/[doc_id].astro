@@ -237,8 +237,9 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
   details > summary {
     cursor: pointer;
     font-weight: var(--weight-medium);
-    /* A summary is a control, so it gets a real touch target. */
-    min-height: 2.75rem;
+    /* A summary is a control, so it gets the same 48px floor as every other
+       control on the site. */
+    min-height: 3rem;
     display: flex;
     align-items: center;
   }

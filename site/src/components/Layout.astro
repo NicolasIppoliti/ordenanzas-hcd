@@ -6,6 +6,7 @@
 // webfonts totalling 45,656 bytes (DESIGN.md Typography), and 0 KB JS except
 // the staleness script, which lives in StalenessNotice.
 import Footer from './Footer.astro';
+import SearchBand from './SearchBand.astro';
 import StalenessNotice from './StalenessNotice.astro';
 import { loadSyncStatus } from '../lib/data';
 
@@ -14,9 +15,14 @@ interface Props {
   description?: string;
   /** Developer surfaces opt out of search engines. Archive pages never do. */
   noindex?: boolean;
+  /** The search page renders its own, fuller form; a second field in the header
+   *  would duplicate the `q` id its label points at. It is the only page that
+   *  sets this, and it says so itself rather than the header guessing from a
+   *  path. */
+  searchBand?: boolean;
 }
 
-const { title, description, noindex = false } = Astro.props;
+const { title, description, noindex = false, searchBand = true } = Astro.props;
 const syncStatus = loadSyncStatus();
 ---
 
@@ -140,14 +146,14 @@ const syncStatus = loadSyncStatus();
       .site-name {
         font-weight: var(--weight-bold);
       }
-      /* Touch targets: 48px is the web-mobile minimum, and these are the only
-         navigation links on the site. The padding does the work; the text
+      /* Touch targets: 48px, the web-mobile minimum, matching the search band
+         and the search page's controls. The padding does the work; the text
          itself stays inline so the header does not turn into a button bar. */
       nav a,
       footer a {
         display: inline-block;
         padding-block: var(--space-2);
-        min-height: 2.75rem;
+        min-height: 3rem;
         line-height: 1.6;
       }
       footer {
@@ -200,6 +206,7 @@ const syncStatus = loadSyncStatus();
         <a href="/documentos">Todos los documentos</a>
         <a href="/acerca">Acerca</a>
       </nav>
+      <SearchBand hidden={!searchBand} />
     </header>
     <main id="main-content">
       <StalenessNotice

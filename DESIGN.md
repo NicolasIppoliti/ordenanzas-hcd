@@ -164,9 +164,15 @@ carried the most value to a reader first:
 2. ✅ Browse-by-year page — PR #25.
 3. ✅ Self-hosted Fraunces + Instrument Sans — PR #26.
 4. ✅ Warm paper palette, every contrast pair re-measured.
-5. ⬜ Move search into a persistent header band.
+5. ✅ Persistent header search band.
 
-Until step 5 lands, search still lives on its own page.
+All five have landed. The band is a plain GET form rather than a live widget: it adds
+zero bytes of script to the 1,038 document pages, where a suggestion box would have
+shipped the ~30 KB Pagefind runtime to save one navigation.
+
+It does not make search work without JavaScript, and the site does not pretend otherwise
+— Pagefind resolves its index in the browser and there is no server behind it. `/buscar`
+carries a `<noscript>` saying so and pointing at the browse page, which needs nothing.
 
 ## Decisions Log
 

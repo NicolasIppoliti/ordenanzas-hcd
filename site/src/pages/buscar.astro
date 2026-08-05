@@ -19,6 +19,7 @@ const yearOptions = buildYearOptions(documents);
 <Layout
   title={`Buscar — Archivo de Ordenanzas del HCD`}
   description={`Buscar en ${total} documentos publicados por el Honorable Concejo Deliberante de Coronel Rosales.`}
+  searchBand={false}
 >
   <h1>Buscar en {total} documentos</h1>
 
@@ -57,6 +58,19 @@ const yearOptions = buildYearOptions(documents);
     </div>
     <button type="submit">Buscar</button>
   </form>
+
+  {/* Fail visibly. Pagefind is a JavaScript index and there is no server to
+      query, so with scripting off this page cannot search at all. Saying
+      nothing would leave a reader who arrived from the header band staring at
+      an empty field and a message that describes a state they are not in. The
+      browse page needs no JavaScript, so it is the honest alternative. */}
+  <noscript>
+    <p class="notice-noscript">
+      La búsqueda necesita JavaScript: el índice se resuelve en tu navegador, sin servidor
+      que consultar. Podés <a href="/documentos">ver los {total} documentos por año</a>,
+      que funciona sin JavaScript.
+    </p>
+  </noscript>
 
   <div id="results" role="region" aria-live="polite" aria-label="Resultados de la búsqueda">
     <p>Escribí un término para buscar en {total} documentos, o elegí un filtro.</p>
@@ -177,6 +191,30 @@ const yearOptions = buildYearOptions(documents);
       event.preventDefault();
       void runSearch();
     });
+
+    // The header band on every other page is a plain GET form pointing here, so
+    // a reader arrives with their query already in the URL. Ignoring it would
+    // make the band decoration: they would land on an empty field having
+    // already typed. The filters are read too, so a result page can be shared
+    // or bookmarked as the exact search that produced it.
+    const params = new URLSearchParams(window.location.search);
+    const initialQuery = params.get('q');
+    if (initialQuery !== null) input.value = initialQuery;
+    for (const [name, select] of [
+      ['tipo', tipoSelect],
+      ['anio', anioSelect],
+      ['texto', textoSelect],
+    ] as const) {
+      const value = params.get(name);
+      // Only a value the select actually offers: the query string is
+      // user-controlled, and an unknown filter would silently return nothing.
+      if (value !== null && [...select.options].some((option) => option.value === value)) {
+        select.value = value;
+      }
+    }
+    if (input.value.trim().length > 0 || Object.keys(currentFilters()).length > 0) {
+      void runSearch();
+    }
   </script>
 </Layout>
 
@@ -202,6 +240,14 @@ const yearOptions = buildYearOptions(documents);
   label {
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
+  }
+  .notice-noscript {
+    background: var(--notice-bg);
+    border-left: 3px solid var(--notice-border);
+    color: var(--notice-text);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    max-width: var(--measure);
   }
   input[type='search'],
   select {
