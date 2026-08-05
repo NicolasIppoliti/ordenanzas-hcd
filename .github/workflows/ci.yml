@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    name: test + build + actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      # Pinned, never `latest`: an upstream pnpm release once required a newer
+      # Node than these workflows install, and CI broke on a day nobody touched it.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: site/pnpm-lock.yaml
+
+      - name: Install site dependencies
+        working-directory: site
+        run: pnpm install --frozen-lockfile
+
+      # AGENTS.md "Report what ran": both gates, quoted in full.
+      - name: test
+        run: uv run --directory pipeline pytest -q && pnpm --dir site run test
+
+      - name: build
+        run: |
+          uv run --directory pipeline ruff check src tests
+          uv run --directory pipeline mypy src
+          pnpm --dir site run check
+          pnpm --dir site run build
+
+      - name: actionlint
+        uses: reviewdog/action-actionlint@v1
+        with:
+          fail_level: error

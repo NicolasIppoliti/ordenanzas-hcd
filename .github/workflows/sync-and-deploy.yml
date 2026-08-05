@@ -1,0 +1,110 @@
+name: Sync and deploy
+
+# design.md D3, load-bearing gotcha #1: a commit pushed with GITHUB_TOKEN
+# does NOT trigger a push-triggered workflow. Deploy is therefore job 2 in
+# THIS SAME workflow, `needs: sync`, never a separate push-triggered
+# workflow -- otherwise the site silently never rebuilds.
+on:
+  schedule:
+    - cron: "0 9 * * 1" # weekly, Mondays 09:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync HCD listing and archive
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sync_exit_code: ${{ steps.run_sync.outputs.exit_code }}
+    steps:
+      # Full history, not the default shallow clone: commit-and-push-data.sh
+      # recovers from a non-fast-forward push with one `git pull --rebase`,
+      # and a rebase on a depth-1 clone is unreliable. That retry only runs
+      # when something has already gone wrong, which is the worst moment to
+      # discover the clone was too shallow to recover.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Run hcd-sync
+        id: run_sync
+        working-directory: pipeline
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          set +e
+          uv run hcd-sync run --data-dir ../data --archive-dir ../archive
+          exit_code=$?
+          set -e
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push data/
+        run: .github/scripts/commit-and-push-data.sh
+
+      - name: Fail the job on a halted or errored sync
+        # This step is the fail-safe design.md D6 depends on: it MUST run
+        # even though data/ was already committed above, and it MUST exit
+        # non-zero on halt/error so GitHub's own workflow-failure email
+        # fires to the repository owner regardless of whether the Resend
+        # notifier (already attempted inside `hcd-sync run`) succeeded.
+        if: steps.run_sync.outputs.exit_code != '0'
+        env:
+          SYNC_EXIT_CODE: ${{ steps.run_sync.outputs.exit_code }}
+        run: |
+          echo "hcd-sync exited ${SYNC_EXIT_CODE}; see data/sync-status.json" >&2
+          exit 1
+
+  build-deploy:
+    name: Build and deploy the site
+    needs: sync
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # design.md D3, load-bearing gotcha #2: for a schedule/workflow_dispatch
+      # run, github.sha is pinned at run creation and does not advance when
+      # job "sync" pushes. An implicit checkout (no `ref`) force-sets
+      # origin/main to that PRE-SYNC commit, and a plain fetch cannot
+      # recover it -- the deploy would ship data/ from before job "sync"
+      # ran, silently and permanently. `ref: main` is required.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Pinned, never `latest`: an upstream pnpm release once required a newer
+      # Node than these workflows install, and CI broke on a day nobody touched it.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: site/pnpm-lock.yaml
+
+      - name: Install site dependencies
+        working-directory: site
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the site
+        working-directory: site
+        run: pnpm run build
+
+      - name: Deploy to Cloudflare Pages
+        # Task 5.9 (blocked on the owner): the Cloudflare Pages project and
+        # API token must exist before this step can run for real.
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ordenanzas-hcd
+          directory: site/dist
