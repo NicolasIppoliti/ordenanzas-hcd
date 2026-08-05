@@ -38,3 +38,6 @@ __pycache__/
 
 # Playwright MCP scratch: browser snapshots and console logs from verification runs
 .playwright-mcp/
+
+# Ad-hoc screenshots from design/verification work
+doc-*.png
