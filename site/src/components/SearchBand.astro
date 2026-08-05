@@ -74,6 +74,13 @@ const { hidden = false } = Astro.props;
     flex: 1;
     min-width: 0;
   }
+  /* The same placeholder string as the search page's field, so it gets the same
+     colour. A UA default here would be the one piece of text on the site whose
+     contrast nobody measured; --text-muted is 6.45:1 light and 6.67:1 dark. */
+  .search-band input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
   .search-band button {
     font: inherit;
     font-size: var(--text-sm);
