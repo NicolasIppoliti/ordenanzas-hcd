@@ -1,3 +1,43 @@
+/* ---- Faces -----------------------------------------------------------------
+ * Fraunces and Instrument Sans, both OFL-1.1, subset from the upstream variable
+ * fonts with fonttools:
+ *
+ *   varLib.instancer Fraunces[SOFT,WONK,opsz,wght].ttf wght=600 opsz=48 SOFT=0 WONK=0
+ *   varLib.instancer InstrumentSans[wdth,wght].ttf wght=400:700 wdth=100
+ *   pyftsubset <out> --flavor=woff2 --unicodes=<the range below>
+ *
+ * Fraunces keeps ONE weight rather than the 400–700 range. The range costs
+ * 33,916 bytes against 18,504, and this archive sets every display line at one
+ * weight — 15 KB on every first visit for a weight nothing uses is not a
+ * trade a public archive should make. Instrument Sans keeps the range, because
+ * metadata labels, body and emphasis genuinely use three of them.
+ *
+ * `swap` on both: the fallback renders immediately and is replaced when the
+ * file lands. Invisible text while a typeface downloads would invert the entire
+ * point of the product.
+ *
+ * The range is Google's `latin` subset. Spanish needs the accented vowels, ñ,
+ * ¿, ¡, º and ª, and every one of them lives inside U+0000-00FF. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Design tokens for the HCD ordinance archive.
  *
  * Three layers, and components may only ever read the third:
@@ -78,15 +118,22 @@
   --notice-text: var(--a-700);
 
   /* ---- Type ---------------------------------------------------------------
-   * System stack. `ui-sans-serif` first so each OS uses the face it renders
-   * best; no webfont is downloaded, ever.
+   * Two self-hosted families, subset to Latin and served from this origin. A
+   * font CDN would be a request to a domain the archive does not control, on
+   * every page, for a site whose premise is that it costs nothing and depends
+   * on nobody. Measured: 18,504 + 27,152 = 45,656 bytes, cached once across
+   * 1,043 pages. See the @font-face block above for how they were subset.
    *
    * Body is 17px, not the 15px a dashboard would use. That number is calibrated
    * for reading continuous legal prose on a phone — the longest document here is
-   * 207 pages — and 15px turns that into work. */
+   * 207 pages — and 15px turns that into work.
+   *
+   * The fallback stack is not decoration: it is what every reader sees on first
+   * paint, and what they keep if the download fails. */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-    'Helvetica Neue', sans-serif;
+    'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    Helvetica, Arial, 'Helvetica Neue', sans-serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --text-xs: 0.8125rem;   /* 13px  labels, metadata keys */
@@ -102,6 +149,7 @@
 
   --weight-normal: 400;
   --weight-medium: 500;
+  --weight-semibold: 600;  /* the one weight the serif file carries */
   --weight-bold: 700;
 
   /* Measure: the single most effective typographic decision in a reading

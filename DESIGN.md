@@ -52,10 +52,17 @@ face, which reads as "typography was not considered."
 - **Data / numbers:** Instrument Sans with `font-variant-numeric: tabular-nums`, so
   ordinance numbers, years and expedientes align in columns.
 - **Code:** `ui-monospace` system stack. Used only in developer surfaces.
-- **Loading:** self-hosted, subset to Latin, variable axes only. Two families, roughly
-  45 KB total, cached once across all 1,038 pages. This does NOT breach zero-variable-cost:
-  Cloudflare Pages bandwidth is unmetered, and the constraint was always about the bill,
-  not about bytes.
+- **Loading:** self-hosted, subset to Latin. Measured after subsetting: Fraunces 18,504
+  bytes, Instrument Sans 27,152 — **45,656 total**, cached once across all 1,043 pages.
+  This does NOT breach zero-variable-cost: Cloudflare Pages bandwidth is unmetered, and
+  the constraint was always about the bill, not about bytes.
+- **Fraunces ships at one weight (600), not as a variable range.** Keeping 400–700 costs
+  33,916 bytes against 18,504, and every display line in this archive is set at a single
+  weight. 15 KB on every first visit for a weight nothing uses is not a trade a public
+  archive should make. Instrument Sans keeps its 400–700 range, which body, metadata and
+  emphasis genuinely use. Consequence: any future heading that wants a different weight
+  needs the range restored, not a `font-weight` change — asking for one the file does not
+  carry makes the browser synthesise a fake bold.
 
 **Scale** (17px base — calibrated for reading a 207-page ordinance on a phone, not for a
 dashboard):
@@ -163,4 +170,5 @@ Each is independently shippable. 3 and 5 carry the most value for a reader.
 | 2026-08-05 | Initial design system | Created by /design-consultation after visual research of legislation.gov.uk and argentina.gob.ar, against a live site the owner judged unfinished, poorly ordered, cheap-looking, and unclear on the home page |
 | 2026-08-05 | Webfonts allowed | The no-webfont rule was inferred from "mobile payload", not stated in BRIEF.md. Two subset variable families cost ~45 KB cached once, on unmetered bandwidth. It was over-strict, and it was the main reason the site read as unfinished |
 | 2026-08-05 | Warm paper over white | Distinguishes a document archive from a dashboard, and serves civic warmth without any politically-coded colour |
+| 2026-08-05 | Fraunces pinned to weight 600 | The variable range cost 15 KB more than the whole Instrument Sans file, for weights no heading uses. Measured, not estimated |
 | 2026-08-05 | Ranked the four goals instead of blending them | "A bit of all four" was the owner's instinct; blended, they conflict above the fold. Ranked, all four survive and collisions have an answer |
