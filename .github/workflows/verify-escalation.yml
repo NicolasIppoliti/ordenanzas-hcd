@@ -1,0 +1,30 @@
+name: Verify escalation
+
+# Sends ONE real alert through the production `send_alert`, on demand.
+#
+# The alert path is the thing that only matters on the day something breaks, which
+# is the worst possible day to discover it was misconfigured. This workflow lets an
+# operator prove it works now — and re-prove it after rotating RESEND_API_KEY, after
+# changing the Email Routing rule, or after any DNS edit on fragua.dev.
+#
+# Manual only: it must never fire on a schedule or a push, because every run puts a
+# real message in a real mailbox.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  send-test-alert:
+    name: Send one test escalation email
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Send the alert
+        working-directory: pipeline
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: uv run python scripts/send_test_alert.py
