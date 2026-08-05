@@ -9,6 +9,8 @@
 // every document appears (no silent omission), nothing is inferred, and the
 // 223 documents whose year the source never stated are visible rather than
 // quietly dropped from a page that claims to hold the whole corpus.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
 import DocumentosPage from '../src/pages/documentos.astro';
@@ -50,7 +52,12 @@ describe('browse-by-year page', () => {
     const page = await container.renderToString(DocumentosPage, {});
 
     expect(page).toContain('Año no determinado');
-    expect(page).toContain('223');
+    // Scoped to the heading: `223` appears seven times in this page, six of them
+    // inside unrelated doc_ids like `4223-O0132023`. An unscoped substring would
+    // stay green if the count rendered 0 or the span vanished — a wrong assertion
+    // that fails silently by passing.
+    const group = page.slice(page.indexOf('id="anio-sin-determinar"'));
+    expect(group.slice(0, group.indexOf('</h2>') + 5)).toContain('223');
   });
 
   it('carries a year index that links to each group', async () => {
@@ -72,6 +79,20 @@ describe('browse-by-year page', () => {
     expect(group.slice(0, group.indexOf('</h2>') + 5)).toContain('108');
   });
 
+  it('omits the undated group entirely when no document lacks a year', async () => {
+    // The label is shared with the search filter, which shows the bucket only
+    // when a record actually needs it. A group reading "0 documentos" above a
+    // paragraph about documents the HCD left undated would assert something
+    // about records that do not exist.
+    //
+    // Asserted against source: the page reads the manifest itself and takes no
+    // props, so there is no way to render it against a corpus where every
+    // document carries a year. The guard is the only thing that can be pinned.
+    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'documentos.astro'), 'utf-8');
+
+    expect(page).toContain('undated.length > 0');
+  });
+
   it('is reachable from the main navigation on every page', async () => {
     // A browse page nobody can find is a browse page that does not exist. The
     // nav is the only chrome that appears on all 1,042 pages.
@@ -80,6 +101,18 @@ describe('browse-by-year page', () => {
     const nav = page.slice(page.indexOf('<nav aria-label="Principal"'));
 
     expect(nav.slice(0, nav.indexOf('</nav>'))).toContain('href="/documentos"');
+  });
+
+  it('keeps a jumped-to year clear of the sticky index', async () => {
+    // Every link in the index is an in-page anchor, and the index is sticky at
+    // the top. Without scroll-margin the browser puts the heading exactly where
+    // the bar is, so the reader lands on a year whose heading and first rows are
+    // covered — the jump appears to have gone to the wrong place.
+    // Asserts the VALUE, not the property name: `scroll-margin-top: 0` would
+    // satisfy a presence check and clear nothing at all.
+    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'documentos.astro'), 'utf-8');
+
+    expect(page).toMatch(/scroll-margin-top:\s*var\(--space-16\)/);
   });
 
   it('keeps the index out of Pagefind', async () => {

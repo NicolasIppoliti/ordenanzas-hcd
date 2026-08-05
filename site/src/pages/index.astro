@@ -12,11 +12,11 @@ const total = documents.length.toLocaleString('es-AR');
 
 const recent = [...documents]
   .sort((a, b) => {
-    if (a.year === null && b.year === null) return a.doc_id.localeCompare(b.doc_id);
+    if (a.year === null && b.year === null) return a.doc_id.localeCompare(b.doc_id, 'es');
     if (a.year === null) return 1;
     if (b.year === null) return -1;
     if (a.year !== b.year) return b.year - a.year;
-    return a.doc_id.localeCompare(b.doc_id);
+    return a.doc_id.localeCompare(b.doc_id, 'es');
   })
   .slice(0, 20);
 ---

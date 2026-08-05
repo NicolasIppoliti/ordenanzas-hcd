@@ -49,7 +49,7 @@ const undatedLabel = getAnioFilterValue(null);
 ---
 
 <Layout
-  title={`Todos los documentos por año — Archivo del HCD`}
+  title="Todos los documentos por año — Archivo del HCD"
   description={`Los ${total} documentos del Honorable Concejo Deliberante de Coronel Rosales, agrupados por año.`}
 >
   <h1>Todos los documentos</h1>
@@ -65,7 +65,7 @@ const undatedLabel = getAnioFilterValue(null);
   <div class="browse" data-pagefind-ignore>
     <nav aria-label="Índice de años" class="year-index">
       {years.map((year) => <a href={`#anio-${year}`}>{year}</a>)}
-      <a href="#anio-sin-determinar">{undatedLabel}</a>
+      {undated.length > 0 && <a href="#anio-sin-determinar">{undatedLabel}</a>}
     </nav>
 
     {
@@ -85,6 +85,7 @@ const undatedLabel = getAnioFilterValue(null);
       ))
     }
 
+    {undated.length > 0 && (
     <section aria-labelledby="anio-sin-determinar">
       <h2 id="anio-sin-determinar">
         {undatedLabel} <span class="count">{undated.length} documentos</span>
@@ -101,6 +102,7 @@ const undatedLabel = getAnioFilterValue(null);
         ))}
       </ul>
     </section>
+    )}
   </div>
 </Layout>
 
@@ -128,6 +130,9 @@ const undatedLabel = getAnioFilterValue(null);
     margin-top: var(--space-8);
   }
   .browse h2 {
+    /* The index is sticky, so an anchor jump would otherwise land the heading
+       underneath it. Clears the bar's own height plus a line of breathing room. */
+    scroll-margin-top: var(--space-16);
     font-size: var(--text-xl);
     font-variant-numeric: tabular-nums;
     margin: 0 0 var(--space-3);
