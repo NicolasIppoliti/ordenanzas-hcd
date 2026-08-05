@@ -41,12 +41,18 @@ const identifier = formatDocIdentifier(doc);
 const body = loadDocumentBody(doc);
 const rawText = body?.text ?? null;
 // PDF extraction preserves the source's leading and trailing whitespace — this
-// corpus averages ~31 blank characters before the first word, which `pre-wrap`
+// corpus carries a median of 31 blank characters before the first word (mean 44),
+// which `pre-wrap`
 // renders faithfully as a hole between the heading and the text. Trimming the
 // ENDS is presentation, not editing: no word, line break or internal spacing of
 // the document is touched, so the transcript stays exactly what the HCD published.
-const text = rawText === null ? null : rawText.trim();
-// A reader thinks in pages, not characters. 676.897 caracteres is a true
+// A body of nothing but whitespace is textless in every sense that matters to a
+// reader, and treating it as text ships the same blank section the reason table
+// exists to prevent. No document in the corpus is in this state today.
+const trimmed = rawText === null ? null : rawText.trim();
+const text = trimmed === '' ? null : trimmed;
+// A reader thinks in pages, not characters. 676.897 caracteres — the trimmed
+// length of the largest document, whose raw length is 676,955 — is a true
 // number that tells a neighbour nothing; "207 páginas" tells them whether to
 // open it on a phone.
 const pageCount = body?.pages ?? null;
@@ -55,10 +61,10 @@ const sizeLabel =
     ? `${pageCount.toLocaleString('es-AR')} páginas`
     : `${(text?.length ?? 0).toLocaleString('es-AR')} caracteres`;
 
-// Task 4a.12a: 9 documents carry more than 50,000 characters of extracted text
-// (the threshold below counts characters, not bytes; the
-// largest is 207 pages: 676,955 characters, 692 KB of UTF-8). The full body
-// MUST stay in the DOM so
+// Task 4a.12a: 9 documents carry more than 50,000 characters of extracted text.
+// The threshold counts characters of the trimmed body, not bytes. The largest
+// document is 207 pages: 676,955 raw characters, 676,897 trimmed, 692 KB of
+// UTF-8. The full body MUST stay in the DOM so
 // Pagefind indexes it in 4b — truncation is not acceptable. A closed
 // <details> is progressive disclosure that keeps every byte in the markup.
 const LARGE_TEXT_THRESHOLD = 50_000;
@@ -66,7 +72,9 @@ const LARGE_TEXT_THRESHOLD = 50_000;
 /* Every status the contract allows, so a new one cannot silently render a blank
    section — `Record<Status, string>` makes that a type error instead. */
 const NO_TEXT_REASON: Record<Status, string> = {
-  ok: 'El texto no pudo leerse.',
+  // `ok` reaches this branch only when the record carries no `text_path`, or
+  // when the extracted body is empty — never as a read failure, which throws.
+  ok: 'Sin texto extraído para este documento.',
   no_text: 'Sin texto indexado.',
   pending: 'Todavía sin procesar. Se indexará en la próxima sincronización.',
   error: 'La última sincronización falló para este documento.',

@@ -10,6 +10,8 @@
 //    The related-documents heading still said "Ordenanzas relacionadas", and
 //    `buildRelatedIndex` does not filter by type, so a decreto or a convenio
 //    was being labelled an ordenanza by the heading above its own link.
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
 import DetailPage from '../src/pages/documento/[doc_id].astro';
@@ -45,7 +47,9 @@ describe('detail page text section', () => {
     // `pending` and `error` are in the contract and reachable from a partial
     // sync. Neither is in today's data, which is precisely why the blank
     // section would have shipped unnoticed.
-    for (const status of ['no_text', 'pending', 'error'] satisfies Status[]) {
+    // `ok` is in the loop too: a record with no `text_path` is `ok` and textless,
+    // and type coverage from `Record<Status, string>` is not render coverage.
+    for (const status of ['ok', 'no_text', 'pending', 'error'] satisfies Status[]) {
       const container = await AstroContainer.create();
       const html = await container.renderToString(DetailPage, {
         props: { doc: baseDoc({ doc_id: `x-${status}`, status }) },
@@ -58,6 +62,87 @@ describe('detail page text section', () => {
       const prose = section.replace(/<[^>]*>/g, '').replace('Texto', '').trim();
       expect(prose, `${status} rendered a section with no stated reason`).not.toBe('');
     }
+  });
+});
+
+describe('detail page text section, remaining blank-section holes', () => {
+  it('states a reason when the body is present but holds only whitespace', async () => {
+    // Same silent blank as an absent body: a status of `ok` whose extracted text
+    // is nothing but PDF whitespace. No document in the corpus is in this state
+    // today, which is the only reason it has never been seen.
+    const container = await AstroContainer.create();
+    const html = await container.renderToString(DetailPage, {
+      props: {
+        doc: baseDoc({ doc_id: 'blanco', text_path: 'site/tests/fixtures/blank-text.json' }),
+      },
+    });
+    const start = html.indexOf('<section aria-label="Texto del documento"');
+    const section = html.slice(start, html.indexOf('</section>', start));
+    expect(section.replace(/<[^>]*>/g, '').replace('Texto', '').trim()).not.toBe('');
+  });
+});
+
+describe('the textless rule over the real corpus', () => {
+  it('finds no document whose extracted text is only whitespace', () => {
+    // `trimmed === '' → null` is a hardening rule, and this project replays every
+    // hardening rule over the whole corpus before it lands. Today the answer is
+    // zero; if an extraction regression ever makes it non-zero, those documents
+    // would silently render "Sin texto extraído" instead of their text, and this
+    // fails loudly instead.
+    const dir = join(process.cwd(), '..', 'data', 'documents');
+    const blank = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .filter((f) => {
+        const { text } = JSON.parse(readFileSync(join(dir, f), 'utf-8')) as { text: string };
+        return text.trim() === '';
+      });
+    expect(blank, `documents with a whitespace-only body: ${blank.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('detail page sections that had no page-level test', () => {
+  it('lists the archive files that share a number, without asserting a relation', async () => {
+    // 88 documents share a number with another file. The section states the fact
+    // and nothing more — no verb, no claim about which supersedes which.
+    const container = await AstroContainer.create();
+    const doc = baseDoc({ doc_id: '3298--2021-11', number: 3298 });
+    const sibling = baseDoc({ doc_id: '3298--2021-12', number: 3298 });
+    const html = await container.renderToString(DetailPage, { props: { doc, siblings: [sibling] } });
+
+    expect(html).toContain('Archivos con el mismo número');
+    expect(html).toContain('/documento/3298--2021-12');
+  });
+
+  it('keeps every character of the largest real document in the markup', async () => {
+    // The 9 documents over 50,000 characters are progressively disclosed, never
+    // truncated: Pagefind indexes the DOM, so a cut body is a body that cannot be
+    // searched. This is the real 207-page fiscal ordinance, 676,955 characters.
+    const path = 'data/documents/4270-D-138-2023-Fiscal-e-Impositiva-2024.json';
+    const { text } = JSON.parse(
+      readFileSync(join(process.cwd(), '..', path), 'utf-8')
+    ) as { text: string };
+    const container = await AstroContainer.create();
+    const html = await container.renderToString(DetailPage, {
+      props: { doc: baseDoc({ doc_id: 'grande', text_path: path }) },
+    });
+
+    expect(html).toContain('<details');
+
+    // Compared EXACTLY, not as a lower bound. A `>=` against the whole section
+    // tolerates whatever the chrome contributes — the heading, the summary and
+    // the entity escaping came to about 50 characters of slack, which is 50
+    // characters of body that could vanish with the test still green.
+    const start = html.indexOf('<summary');
+    const rendered = html
+      .slice(html.indexOf('</summary>', start) + '</summary>'.length, html.indexOf('</details>', start))
+      .replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&');
+    const chars = (s: string) => s.replace(/\s+/g, '');
+    expect(chars(rendered)).toBe(chars(text.trim()));
   });
 });
 
