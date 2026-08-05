@@ -24,6 +24,7 @@ from hcd_sync import (
     extract,
     http_client,
     manifest_writer,
+    notify,
     sync_status,
     unresolved,
     unresolved_references,
@@ -446,6 +447,7 @@ def main(argv: list[str] | None = None) -> int:
             recheck=args.recheck,
             limit=args.limit,
             dry_run=args.dry_run,
+            notifier=notify.send_alert,
         )
 
     parser.error(f"unknown command: {args.command}")
