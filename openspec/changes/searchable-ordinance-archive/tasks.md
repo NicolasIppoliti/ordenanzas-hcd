@@ -47,6 +47,35 @@ boundary gives PR2a a real, inspectable artifact — a manifest built from the c
 fixture, with no network code exercised at all — and lets PR2b introduce the risky
 fetching code against an identity model that is already settled and verified.
 
+### Delivered branch chain (measured, 2026-08-05)
+
+Built retroactively from an uncommitted tree, so `cli.py` — which grew across three
+slices and had no intermediate versions — was reconstructed at two earlier boundaries
+rather than simply distributed. Sizes exclude lockfiles and the captured listing fixture.
+
+| Branch | Lines | Contents |
+|---|---|---|
+| `main` | — | brief, specs, design, tasks, review rules |
+| `slice/1-scaffolding` | 170 | toolchain + network guard |
+| `slice/2a-i-listing-identity` | 509 | listing parser, `doc_id`, path safety |
+| `slice/2a-ii-metadata` | 427 | title, type, year, expediente |
+| `slice/2a-iii-writers` | 508 | manifest, sync status, aliases, offline CLI |
+| `slice/2b-i-politeness` | 355 | host policy, delay, retries, `robots.txt` HALT |
+| `slice/2b-ii-archive` | 836 | archive, checksums, drift, incremental loop |
+| `slice/3-i-extraction` | 171 | PyMuPDF text, `no_text` |
+| `slice/3-ii-crossrefs` | 330 | reference detection, manifest gating |
+| `slice/3-iii-wiring` | 711 | extraction + header year + crossrefs wired in |
+| `slice/3-iv-contract` | 671 | JSON Schema + TypeScript mirror |
+
+Every PR is under the 800-line review budget except `2b-ii` at 836, 36 over: splitting it
+further would have separated the archive writer from the loop that calls it, which reads
+worse than the 36 lines cost.
+
+The first attempt produced only six branches, with PR2b at 1,191 lines and PR3 at 1,883 —
+2.4x the budget. The forecast in the table above had said ~400 and ~450. That is the third
+time in this change the estimates ran low by roughly 3x, and the reason the sizes here are
+labelled measured rather than estimated.
+
 ### Suggested Work Units
 
 | Unit | Goal | PR | Focused test command | Runtime harness | Rollback boundary |
