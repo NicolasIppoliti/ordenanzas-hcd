@@ -98,8 +98,14 @@ Line height: 1.15 headings · 1.5 UI · 1.65 document prose. Measure capped at 6
 that rules out celeste, red, violet and yellow as an accent. Deep ink blue reads
 "official document" without reading as any bloc.
 
-**Every pair is measured, never estimated.** Lowest measured contrast: 5.84:1 light,
-8.55:1 dark, against a 4.5:1 requirement. Re-measure on any change.
+**Every pair is measured, never estimated.** `site/tests/palette.test.ts` computes every
+ratio from `tokens.css` itself and fails the build below 4.5:1 for text and 3:1 for
+control boundaries — a ratio written down beside the colour is a ratio nobody measured.
+Measured floors: **5.91:1 light, 6.08:1 dark**.
+
+That test found one real defect on adoption: `--border-strong`, which draws the boundary
+of the search input and the two selects, measured 2.07:1 light and 2.65:1 dark against
+WCAG 1.4.11's 3:1. It is now 3.59:1 and 4.76:1.
 
 ## Spacing
 
@@ -151,17 +157,16 @@ number — they know roughly when. Search demands you know what to type; browsin
 
 ## Implementation gap
 
-`site/` currently implements an earlier, austere system: `system-ui`, cool neutrals,
-white background, `pre-wrap` document text, search on its own page. Adopting this
-document means, in rough order of impact:
+Adopting this document was done in five independently shippable steps, in the order that
+carried the most value to a reader first:
 
-1. Self-host and load Fraunces + Instrument Sans; retune the scale against them.
-2. Swap the palette to warm paper; re-measure every contrast pair.
-3. Build the article renderer with its 3% fallback.
-4. Move search into a persistent header band.
-5. Build the browse-by-year page.
+1. ✅ Article renderer with its fallback — PR #24.
+2. ✅ Browse-by-year page — PR #25.
+3. ✅ Self-hosted Fraunces + Instrument Sans — PR #26.
+4. ✅ Warm paper palette, every contrast pair re-measured.
+5. ⬜ Move search into a persistent header band.
 
-Each is independently shippable. 3 and 5 carry the most value for a reader.
+Until step 5 lands, search still lives on its own page.
 
 ## Decisions Log
 
@@ -170,5 +175,6 @@ Each is independently shippable. 3 and 5 carry the most value for a reader.
 | 2026-08-05 | Initial design system | Created by /design-consultation after visual research of legislation.gov.uk and argentina.gob.ar, against a live site the owner judged unfinished, poorly ordered, cheap-looking, and unclear on the home page |
 | 2026-08-05 | Webfonts allowed | The no-webfont rule was inferred from "mobile payload", not stated in BRIEF.md. Two subset variable families cost ~45 KB cached once, on unmetered bandwidth. It was over-strict, and it was the main reason the site read as unfinished |
 | 2026-08-05 | Warm paper over white | Distinguishes a document archive from a dashboard, and serves civic warmth without any politically-coded colour |
+| 2026-08-05 | Contrast asserted by computation, not by table | The written floors (5.84 / 8.55) were both wrong once the palette changed, and the form-control boundary had never cleared 3:1 at all |
 | 2026-08-05 | Fraunces pinned to weight 600 | The variable range cost 15 KB more than the whole Instrument Sans file, for weights no heading uses. Measured, not estimated |
 | 2026-08-05 | Ranked the four goals instead of blending them | "A bit of all four" was the owner's instinct; blended, they conflict above the fold. Ranked, all four survive and collisions have an answer |

@@ -100,6 +100,7 @@ produced them instead.
 colour, spacing, layout, motion, and the three deliberate risks. Read it before changing
 anything that renders, and flag any code that departs from it without a stated reason.
 
-Note that `site/` currently predates it — DESIGN.md carries an "Implementation gap"
-section listing exactly what has not been adopted yet. A mismatch there is known, not a
-finding.
+DESIGN.md's "Implementation gap" section tracks adoption item by item. Four of the five
+have landed; only the persistent header search band is outstanding, so search still lives
+on its own page. A mismatch listed there is known, not a finding — a mismatch that is NOT
+listed there is.
