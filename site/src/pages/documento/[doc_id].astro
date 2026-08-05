@@ -2,8 +2,9 @@
 // Ordinance-detail spec + design.md D4/D5/D7/D8/D12: one route for every
 // record, type-neutral. getStaticPaths runs over the whole manifest — the
 // route is derived, never a hardcoded count (D7).
+import DocumentText from '../../components/DocumentText.astro';
 import Layout from '../../components/Layout.astro';
-import type { ManifestDocument } from '../../lib/contract';
+import type { ManifestDocument, Status } from '../../lib/contract';
 import { getDocuments, loadDocumentBody } from '../../lib/data';
 import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
 import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
@@ -40,12 +41,18 @@ const identifier = formatDocIdentifier(doc);
 const body = loadDocumentBody(doc);
 const rawText = body?.text ?? null;
 // PDF extraction preserves the source's leading and trailing whitespace — this
-// corpus averages ~31 blank characters before the first word, which `pre-wrap`
+// corpus carries a median of 31 blank characters before the first word (mean 44),
+// which `pre-wrap`
 // renders faithfully as a hole between the heading and the text. Trimming the
 // ENDS is presentation, not editing: no word, line break or internal spacing of
 // the document is touched, so the transcript stays exactly what the HCD published.
-const text = rawText === null ? null : rawText.trim();
-// A reader thinks in pages, not characters. 676.897 caracteres is a true
+// A body of nothing but whitespace is textless in every sense that matters to a
+// reader, and treating it as text ships the same blank section the reason table
+// exists to prevent. No document in the corpus is in this state today.
+const trimmed = rawText === null ? null : rawText.trim();
+const text = trimmed === '' ? null : trimmed;
+// A reader thinks in pages, not characters. 676.897 caracteres — the trimmed
+// length of the largest document, whose raw length is 676,955 — is a true
 // number that tells a neighbour nothing; "207 páginas" tells them whether to
 // open it on a phone.
 const pageCount = body?.pages ?? null;
@@ -54,11 +61,24 @@ const sizeLabel =
     ? `${pageCount.toLocaleString('es-AR')} páginas`
     : `${(text?.length ?? 0).toLocaleString('es-AR')} caracteres`;
 
-// Task 4a.12a: 11 documents carry more than 50 KB of extracted text (the
-// largest is 207 pages / 708 KB). The full body MUST stay in the DOM so
+// Task 4a.12a: 9 documents carry more than 50,000 characters of extracted text.
+// The threshold counts characters of the trimmed body, not bytes. The largest
+// document is 207 pages: 676,955 raw characters, 676,897 trimmed, 692 KB of
+// UTF-8. The full body MUST stay in the DOM so
 // Pagefind indexes it in 4b — truncation is not acceptable. A closed
 // <details> is progressive disclosure that keeps every byte in the markup.
 const LARGE_TEXT_THRESHOLD = 50_000;
+
+/* Every status the contract allows, so a new one cannot silently render a blank
+   section — `Record<Status, string>` makes that a type error instead. */
+const NO_TEXT_REASON: Record<Status, string> = {
+  // `ok` reaches this branch only when the record carries no `text_path`, or
+  // when the extracted body is empty — never as a read failure, which throws.
+  ok: 'Sin texto extraído para este documento.',
+  no_text: 'Sin texto indexado.',
+  pending: 'Todavía sin procesar. Se indexará en la próxima sincronización.',
+  error: 'La última sincronización falló para este documento.',
+};
 const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 ---
 
@@ -124,13 +144,19 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     <section aria-label="Texto del documento">
       <h2>Texto</h2>
-      {doc.status === 'no_text' && <p class="muted">Sin texto indexado.</p>}
-      {text !== null && !isLargeText && <div class="doc-text">{text}</div>}
+      {
+        /* Fail visibly: every status that carries no text says why. `pending` and
+           `error` are in the contract and reachable from a partial sync, and a
+           section with a heading and nothing under it is the silent incomplete
+           page the rules forbid. */
+        text === null && <p class="muted">{NO_TEXT_REASON[doc.status]}</p>
+      }
+      {text !== null && !isLargeText && <DocumentText text={text} />}
       {
         text !== null && isLargeText && (
           <details>
             <summary>Ver texto completo ({sizeLabel})</summary>
-            <div class="doc-text">{text}</div>
+            <DocumentText text={text} />
           </details>
         )
       }
@@ -138,8 +164,10 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     {
       related.length > 0 && (
-        <section aria-label="Ordenanzas relacionadas" data-pagefind-ignore>
-          <h2>Ordenanzas relacionadas</h2>
+        <section aria-label="Documentos relacionados" data-pagefind-ignore>
+          {/* Not "Ordenanzas": the related index does not filter by type, and the
+              archive holds convenios, decretos, resoluciones and anexos too. */}
+          <h2>Documentos relacionados</h2>
           <ul>
             {related.map((target) => (
               <li>
@@ -154,24 +182,6 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 </Layout>
 
 <style>
-  /* The reading surface. Everything here serves one person: someone looking up a
-     regulation on a phone, sometimes across 207 pages. */
-  .doc-text {
-    white-space: pre-wrap;
-    /* The single most effective decision in a reading interface. Past ~75
-       characters the eye loses the line return, and the longest document in this
-       archive is a 207-page tariff schedule. */
-    max-width: var(--measure);
-    font-size: var(--text-base);
-    line-height: var(--leading-prose);
-    /* Extracted PDF text arrives with the source's own line breaks, so it is
-       already ragged. Hyphenation stops long Spanish legal compounds from
-       tearing the right edge open on a narrow screen. */
-    hyphens: auto;
-    overflow-wrap: break-word;
-    margin-top: var(--space-6);
-  }
-
   /* Metadata reads as a reference table, not as prose: label and value on one
      line, labels quiet, values carrying the weight. */
   .metadata {
@@ -215,7 +225,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
     gap: var(--space-2);
   }
 
-  /* The nine documents over 50 KB of text. The full body stays in the DOM so
+  /* The nine documents over 50 KB of extracted text. The full body stays in the DOM so
      Pagefind indexes it — collapsing is about not dropping a reader into 207
      pages unannounced, not about shipping fewer bytes. */
   details {
