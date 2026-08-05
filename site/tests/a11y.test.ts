@@ -1,4 +1,4 @@
-// Task 4a.11: axe-core + happy-dom over four page shapes — index,
+// Task 4a.11: axe-core + happy-dom over five page shapes — index, browse,
 // detail-with-title, detail-null-title, detail-convenio.
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import axe from 'axe-core';
@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import IndexPage from '../src/pages/index.astro';
 import DetailPage from '../src/pages/documento/[doc_id].astro';
 import DesignSystemPage from '../src/pages/design-system.astro';
+import DocumentosPage from '../src/pages/documentos.astro';
 import type { ManifestDocument } from '../src/lib/contract';
 
 function baseDoc(overrides: Partial<ManifestDocument> & { doc_id: string }): ManifestDocument {
@@ -59,6 +60,15 @@ describe('accessibility (axe-core)', () => {
   it('index page has no WCAG 2.1 AA violations', async () => {
     const container = await AstroContainer.create();
     const html = await container.renderToString(IndexPage);
+    const violations = await auditHtml(html);
+    expect(violations, JSON.stringify(violations, null, 2)).toHaveLength(0);
+  });
+
+  it('browse-by-year page has no WCAG 2.1 AA violations', async () => {
+    // The densest page in the archive: 1,038 links, 16 headings and a sticky
+    // index. Density is where landmark and heading-order violations hide.
+    const container = await AstroContainer.create();
+    const html = await container.renderToString(DocumentosPage);
     const violations = await auditHtml(html);
     expect(violations, JSON.stringify(violations, null, 2)).toHaveLength(0);
   });
