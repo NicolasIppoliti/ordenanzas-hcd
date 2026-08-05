@@ -9,8 +9,13 @@
 // appearing in a resident's results.
 import Layout from '../components/Layout.astro';
 
-const neutral = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+// '050' is the warm paper itself — the primitive DESIGN.md risk 1 exists for.
+// Strings, because the leading zero is part of the token name.
+const neutral = ['050', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
 const blue = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+// The amber exists for exactly one thing: the archive-is-out-of-date notice.
+// A page that says "two families and an amber" has to show the amber.
+const amber = [100, 200, 500, 700, 900];
 
 const typeScale = [
   ['--text-2xl', '30px', 'Título de página'],
@@ -59,10 +64,24 @@ const spacing = [1, 2, 3, 4, 6, 8, 12, 16];
           </div>
         ))}
       </div>
+      <h3>Ámbar</h3>
+      <p class="muted">
+        Una sola función: el aviso de archivo desactualizado. No se usa en ningún otro lado.
+      </p>
+      <div class="swatches">
+        {amber.map((step) => (
+          <div class="swatch">
+            <span style={`background: var(--a-${step})`}></span>
+            <code>--a-{step}</code>
+          </div>
+        ))}
+      </div>
+
       <h3>Semánticos</h3>
       <p class="muted">
         Los que consumen los componentes. Cambian con el tema del sistema operativo; el par de
-        menor contraste medido es 5,84:1 en claro y 8,55:1 en oscuro, contra un mínimo de 4,5:1.
+        menor contraste medido es 5,91:1 en claro y 6,08:1 en oscuro, contra un mínimo de 4,5:1.
+        Los ratios los calcula la suite de tests sobre el propio archivo de tokens.
       </p>
       <ul class="tokens">
         <li><code>--text</code> · texto de cuerpo</li>
@@ -70,6 +89,7 @@ const spacing = [1, 2, 3, 4, 6, 8, 12, 16];
         <li><code>--link</code> / <code>--link-hover</code></li>
         <li><code>--border</code> / <code>--border-strong</code></li>
         <li><code>--bg</code> / <code>--bg-surface</code></li>
+        <li><code>--focus</code> · anillo de foco, medido a 3:1 como mínimo</li>
         <li><code>--notice-bg</code> / <code>--notice-border</code> / <code>--notice-text</code></li>
       </ul>
     </section>
@@ -77,9 +97,15 @@ const spacing = [1, 2, 3, 4, 6, 8, 12, 16];
     <section aria-labelledby="tipografia">
       <h2 id="tipografia">Tipografía</h2>
       <p class="muted">
-        Stack del sistema, sin webfonts. El cuerpo es 17px y no los 15px de una app: acá se leen
-        documentos legales de hasta 207 páginas en un teléfono.
+        Dos familias propias, alojadas en este mismo dominio y recortadas al alfabeto latino:
+        45.656 bytes en total, sin pedirle nada a un tercero. El cuerpo es 17px y no los 15px de
+        una app: acá se leen documentos legales de hasta 207 páginas en un teléfono.
       </p>
+      <ul class="tokens">
+        <li><code>--font-serif</code> · Fraunces, un solo peso (600). Títulos</li>
+        <li><code>--font-sans</code> · Instrument Sans 400–700. Cuerpo, interfaz y metadatos</li>
+        <li><code>--font-mono</code> · stack del sistema. Solo en superficies de desarrollo</li>
+      </ul>
       <table>
         <thead>
           <tr><th>Token</th><th>Tamaño</th><th>Uso</th></tr>

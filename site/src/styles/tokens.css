@@ -49,33 +49,43 @@
  * Two constraints shape everything here, and both come from the product rather
  * than from taste:
  *
- * 1. System fonts only, no webfonts, no images. This is a public utility whose
- *    running cost may not scale with traffic, and whose readers are mostly on
- *    phones on municipal-town connections. A font file is the single easiest way
- *    to break both of those at once.
+ * 1. No images, and two self-hosted webfonts totalling 45,656 bytes — no third
+ *    party, ever. This is a public utility whose running cost may not scale with
+ *    traffic, and whose readers are mostly on phones on municipal-town
+ *    connections. A request to a domain the archive does not control breaks the
+ *    second of those and puts the first in someone else's hands.
  * 2. This is a READING interface for legal text, not an application. The scale
  *    below is calibrated for someone reading a 207-page fiscal ordinance on a
  *    phone, which is why the body size is larger and the measure tighter than a
  *    dashboard would use.
  *
- * Every contrast pair in both themes was measured, not estimated. The lowest is
- * 5.84:1 (muted text on white) against a 4.5:1 requirement.
+ * Every contrast pair in both themes is COMPUTED from this file by
+ * `tests/palette.test.ts`, not written down beside it — a ratio that is merely
+ * asserted is a ratio nobody measured. The floors are 5.91:1 light and 6.08:1
+ * dark, against a 4.5:1 requirement.
  */
 
 :root {
   color-scheme: light dark;
 
   /* ---- Primitive: neutral -------------------------------------------------
-   * Slightly cool. A warm gray reads editorial and friendly; this archive is
-   * neither. It reproduces municipal legal documents and should look like it. */
-  --n-100: #f6f7f9;
-  --n-200: #e8eaee;
-  --n-300: #d3d8de;
-  --n-400: #aab3bd;
-  --n-500: #7d8894;
-  --n-600: #5b6673;
-  --n-700: #414b57;
-  --n-800: #2a323b;
+   * Warm, not cool. DESIGN.md risk 1: every civic site in this category is
+   * white-and-blue, and warm paper is what makes this read as a document
+   * archive rather than a dashboard. It costs a little "clean and modern" and
+   * buys an identity — and it serves "esto es del pueblo" without touching a
+   * colour that reads as any political bloc.
+   *
+   * The ink end stays cool-neutral on purpose: warm text on warm paper loses
+   * the separation that makes 17px legal prose readable for 207 pages. */
+  --n-050: #faf8f4;
+  --n-100: #f2eee7;
+  --n-200: #e9e3d8;
+  --n-300: #ded7cb;
+  --n-400: #b8ae9d;
+  --n-500: #8a8272;
+  --n-600: #5f5a52;
+  --n-700: #443f38;
+  --n-800: #2a2724;
   --n-900: #161b21;
 
   /* ---- Primitive: ink blue ------------------------------------------------
@@ -97,19 +107,22 @@
    * Used for exactly one thing: the archive-is-out-of-date notice. A third
    * family earns its place only because that notice must not look like an
    * ordinary link or an ordinary paragraph. */
-  --a-100: #fdf4e3;
+  --a-100: #f7edd6;
   --a-200: #f7e3b8;
   --a-500: #a06a00;
-  --a-700: #6b4600;
+  --a-700: #5c3d00;
   --a-900: #3a2c05;
 
   /* ---- Semantic: light ---------------------------------------------------- */
-  --bg: #ffffff;
+  --bg: var(--n-050);
   --bg-surface: var(--n-100);
   --text: var(--n-900);
   --text-muted: var(--n-600);
   --border: var(--n-300);
-  --border-strong: var(--n-400);
+  /* The boundary of the search input and the type/year selects, which is what
+     tells a reader those are controls at all — WCAG 1.4.11 asks for 3:1 and the
+     old value measured 2.07:1. Measured now: 3.59:1. */
+  --border-strong: var(--n-500);
   --link: var(--b-600);
   --link-hover: var(--b-700);
   --focus: var(--b-600);
@@ -187,17 +200,19 @@
  * Follows the reader's OS. There is no toggle, because a toggle needs
  * JavaScript and this site ships none beyond a 268-byte staleness script.
  *
- * The dark background is #12161b, not pure black: pure black against light text
+ * The dark background is #14161a, not pure black: pure black against light text
  * maximises halation, which is exactly wrong for someone reading a long
- * document at night. Every pair here was measured too; the lowest is 8.55:1. */
+ * document at night. The ratios are not restated here — `tests/palette.test.ts`
+ * computes them from these values and fails the build if any pair drops. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #12161b;
-    --bg-surface: #1a1f26;
+    --bg: #14161a;
+    --bg-surface: #1c1f25;
     --text: var(--n-100);
-    --text-muted: var(--n-400);
-    --border: #2c343d;
-    --border-strong: var(--n-600);
+    --text-muted: #a49c8f;
+    --border: #2e333b;
+    /* Same control boundary in dark, where --n-600 measured 2.65:1. Now 4.76:1. */
+    --border-strong: var(--n-500);
     --link: var(--b-300);
     --link-hover: var(--b-200);
     --focus: var(--b-300);
