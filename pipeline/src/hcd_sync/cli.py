@@ -334,10 +334,12 @@ def run_sync(
                     # the source printed, not an inference, so it does not breach the
                     # no-fabrication rule. It runs only when steps 1 (expediente) left the
                     # year absent, and it never consults the upload path.
-                    if listing_record.get("year") is None:
-                        header_year = derive_year(expediente=None, header_text=body_text)
-                        if header_year is not None:
-                            fetch_fields = {**fetch_fields, "year": header_year}
+                    # D10: the sanction date printed on the document OUTRANKS the
+                    # expediente year derived from the filename, because the expediente
+                    # records when the file was opened, not when the ordinance passed.
+                    header_year = derive_year(expediente=None, header_text=body_text)
+                    if header_year is not None:
+                        fetch_fields = {**fetch_fields, "year": header_year}
                 extracted_this_run.append(
                     (
                         doc_id,
