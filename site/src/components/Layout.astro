@@ -2,8 +2,9 @@
 // Accessibility and Mobile Payload (design.md): html lang="es" (also
 // selects Pagefind's Spanish stemmer in 4b), semantic landmarks, one <h1>
 // per page (left to each page's own content), a skip link, focus-visible
-// never removed, no colour-only signalling, system font stack, 0 KB JS
-// except the staleness script pulled in via Provenance.
+// never removed, no colour-only signalling, two self-hosted Latin-subset
+// webfonts totalling 45,656 bytes (DESIGN.md Typography), and 0 KB JS except
+// the staleness script, which lives in StalenessNotice.
 import Footer from './Footer.astro';
 import StalenessNotice from './StalenessNotice.astro';
 import { loadSyncStatus } from '../lib/data';
@@ -58,8 +59,10 @@ const syncStatus = loadSyncStatus();
         line-height: var(--leading-normal);
         color: var(--text);
         background: var(--bg);
-        /* Legal Spanish is full of long words; hyphenation keeps the ragged
-           edge from tearing open on a narrow phone. */
+        /* Stops iOS Safari from inflating text when a phone is turned to
+           landscape, which would break the 68ch measure the document pages are
+           set to. Hyphenation is a separate concern and lives with the document
+           text, in DocumentText.astro. */
         -webkit-text-size-adjust: 100%;
       }
       a {
