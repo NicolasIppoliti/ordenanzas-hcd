@@ -1,0 +1,166 @@
+# Design System — Archivo de Ordenanzas del HCD
+
+Source of truth for every visual decision in `site/`. Read it before changing anything
+that renders. The current implementation predates this document and does not yet match
+it — see "Implementation gap" at the end.
+
+## Product Context
+
+- **What this is:** a free, unofficial, searchable archive of the 1,038 documents the
+  Honorable Concejo Deliberante of Coronel Rosales publishes as PDFs.
+- **Who it's for:** residents looking up one regulation — a rate, a permit, a rule about
+  their street — and councillors or staff looking for precedent. Mobile-majority.
+- **Space:** civic tech / legal document archives. Peers: legislation.gov.uk,
+  argentina.gob.ar/normativa, boletinoficial.gob.ar.
+- **Project type:** public document archive. Reading-first, with search and browse.
+
+## The memorable thing, in order
+
+Four goals were named. They conflict, so they are ranked — when two collide, the higher
+one wins:
+
+1. **"Por fin puedo encontrar algo."** The BRIEF exists because these documents are
+   public but unusable. If the first screen does not solve that, the rest is decoration.
+2. **"Esto es serio y confiable"** is the register, not the goal. It decides how things
+   look, and never competes for space above the fold.
+3. **"Esto es del pueblo"** lives in the words and the warmth of the surface, not in
+   structure.
+4. **"Alguien se tomó el trabajo"** is the floor, not a direction. It is execution.
+
+## Aesthetic Direction
+
+- **Direction:** Editorial-Utilitarian. Editorial typography for reading long legal
+  text; utilitarian density for finding one document among a thousand.
+- **Decoration level:** minimal. No illustration, no imagery, no ornament. The type and
+  the paper do the work.
+- **Mood:** a well-made public document. Authoritative without being solemn, warm
+  without being informal.
+- **Reference sites:** legislation.gov.uk (persistent structured search, rendered legal
+  structure), argentina.gob.ar/normativa (serif legal titles, labelled metadata strip,
+  relationship links).
+
+## Typography
+
+The single largest problem with the previous system: it used `system-ui` as the primary
+face, which reads as "typography was not considered."
+
+- **Display / document titles:** **Fraunces** (variable serif). Serif is the Argentine
+  convention for legal text; Fraunces carries it without stiffness and gives the archive
+  a face of its own.
+- **Body / UI / metadata:** **Instrument Sans**. Legible at small sizes, holds up on a
+  phone, not on anyone's overused list.
+- **Data / numbers:** Instrument Sans with `font-variant-numeric: tabular-nums`, so
+  ordinance numbers, years and expedientes align in columns.
+- **Code:** `ui-monospace` system stack. Used only in developer surfaces.
+- **Loading:** self-hosted, subset to Latin, variable axes only. Two families, roughly
+  45 KB total, cached once across all 1,038 pages. This does NOT breach zero-variable-cost:
+  Cloudflare Pages bandwidth is unmetered, and the constraint was always about the bill,
+  not about bytes.
+
+**Scale** (17px base — calibrated for reading a 207-page ordinance on a phone, not for a
+dashboard):
+
+| Token | Size | Use |
+|---|---|---|
+| `--text-2xl` | 30px | page title |
+| `--text-xl` | 24px | section title |
+| `--text-lg` | 20px | lead, result title |
+| `--text-base` | 17px | body and document text |
+| `--text-sm` | 15px | secondary, metadata |
+| `--text-xs` | 13px | labels |
+
+Line height: 1.15 headings · 1.5 UI · 1.65 document prose. Measure capped at 68ch.
+
+## Color
+
+- **Approach:** restrained. One accent, two neutral families, one amber reserved for a
+  single message.
+- **Paper:** `#faf8f4` light / `#14161a` dark. **Not white.** Every civic site is white
+  and blue; warm paper is what makes this read as a document archive rather than a
+  dashboard, and it serves "esto es del pueblo" without touching a political colour.
+- **Surface:** `#f2eee7` / `#1c1f25`
+- **Ink (text):** `#161b21` / `#f2eee7`
+- **Muted:** `#5f5a52` / `#a49c8f`
+- **Rules:** `#ded7cb` / `#2e333b`
+- **Accent (links, focus):** `#0a4f8f` / `#8fbae3`
+- **Notice (stale archive only):** bg `#f7edd6`, rule `#a06a00`, ink `#5c3d00`
+- **Dark mode:** follows `prefers-color-scheme`. No toggle — a toggle needs JavaScript,
+  and this site ships none beyond a 268-byte staleness script.
+
+**Political neutrality constrains the palette as hard as legibility does.** In Argentina
+that rules out celeste, red, violet and yellow as an accent. Deep ink blue reads
+"official document" without reading as any bloc.
+
+**Every pair is measured, never estimated.** Lowest measured contrast: 5.84:1 light,
+8.55:1 dark, against a 4.5:1 requirement. Re-measure on any change.
+
+## Spacing
+
+- **Base unit:** 4px. **Density:** comfortable.
+- **Scale:** 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64. Steps are missing on purpose; the gap
+  pushes you to the nearest rung instead of inventing an in-between.
+
+## Layout
+
+- **Approach:** grid-disciplined for lists and search, editorial measure for documents.
+- **Max content width:** 60rem. Document text: 68ch.
+- **Border radius:** 4px small, 8px medium. Nothing larger.
+- **No elevation scale.** This product has no overlays, no modals, nothing floating.
+  Shipping shadow tokens no component consumes is how a system starts to rot.
+
+## Motion
+
+- **Approach:** minimal-functional. There is no JavaScript to animate anything.
+- **Easing:** `cubic-bezier(0.16, 1, 0.3, 1)` for the few colour transitions.
+- **Duration:** 100ms micro only. `prefers-reduced-motion` respected globally.
+
+## The three risks
+
+Coherence is table stakes. These are the deliberate departures that give the archive a
+face, each with what it costs.
+
+**1. Warm paper instead of white.** Every civic site is white-and-blue. Costs a little
+"clean and modern"; buys an identity as an archive.
+
+**2. Render the legal structure.** Detect `Artículo N` and set it with a hanging number
+in a left column and indented text, instead of dumping `white-space: pre-wrap`. Measured:
+875 of 894 text-bearing documents (97%) carry the anchor. The 3% without it keep the
+current rendering — never a fabricated structure. This is what makes a 207-page tariff
+schedule navigable, and no local peer does it for extracted text.
+
+**3. Browse the whole corpus, not just search it.** Every archive in this category builds
+faceted search because their corpora are millions of records. **This one is 1,038.** The
+entire corpus fits on one page, browsable by year. A resident often does not know the
+number — they know roughly when. Search demands you know what to type; browsing does not.
+
+## Things this system deliberately does NOT do
+
+- **Cross-reference links carry no direction and no verb.** argentina.gob.ar labels
+  "modifica" / "es modificada" because its source is an official database. Ours comes
+  from a regex over a title, so stating a legal relationship would assert something the
+  source does not. This is a provenance decision, not a missing feature.
+- **No Fragua branding** beyond a discreet footer credit. No header brand, no logo.
+- **No editorial layer** of any kind: no summaries, no rankings, no highlighting.
+
+## Implementation gap
+
+`site/` currently implements an earlier, austere system: `system-ui`, cool neutrals,
+white background, `pre-wrap` document text, search on its own page. Adopting this
+document means, in rough order of impact:
+
+1. Self-host and load Fraunces + Instrument Sans; retune the scale against them.
+2. Swap the palette to warm paper; re-measure every contrast pair.
+3. Build the article renderer with its 3% fallback.
+4. Move search into a persistent header band.
+5. Build the browse-by-year page.
+
+Each is independently shippable. 3 and 5 carry the most value for a reader.
+
+## Decisions Log
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-08-05 | Initial design system | Created by /design-consultation after visual research of legislation.gov.uk and argentina.gob.ar, against a live site the owner judged unfinished, poorly ordered, cheap-looking, and unclear on the home page |
+| 2026-08-05 | Webfonts allowed | The no-webfont rule was inferred from "mobile payload", not stated in BRIEF.md. Two subset variable families cost ~45 KB cached once, on unmetered bandwidth. It was over-strict, and it was the main reason the site read as unfinished |
+| 2026-08-05 | Warm paper over white | Distinguishes a document archive from a dashboard, and serves civic warmth without any politically-coded colour |
+| 2026-08-05 | Ranked the four goals instead of blending them | "A bit of all four" was the owner's instinct; blended, they conflict above the fold. Ranked, all four survive and collisions have an answer |

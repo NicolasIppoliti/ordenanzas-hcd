@@ -93,3 +93,13 @@ and municipal officials.
 verbatim capture of the source listing — it is evidence, and must never be reformatted or
 "corrected". Both are excluded in `.gga`; if they appear in a diff, review the code that
 produced them instead.
+
+## Design system
+
+`DESIGN.md` at the repo root is the source of truth for every visual decision: fonts,
+colour, spacing, layout, motion, and the three deliberate risks. Read it before changing
+anything that renders, and flag any code that departs from it without a stated reason.
+
+Note that `site/` currently predates it — DESIGN.md carries an "Implementation gap"
+section listing exactly what has not been adopted yet. A mismatch there is known, not a
+finding.
