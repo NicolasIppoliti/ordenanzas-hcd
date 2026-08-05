@@ -22,4 +22,28 @@ describe('buildExcerpt', () => {
     expect(result!.endsWith('…')).toBe(true);
     expect(result!.startsWith('palabra')).toBe(true);
   });
+
+  it('starts at the first article, skipping the letterhead every document shares', () => {
+    // Measured over the corpus: 875 of the 894 text-bearing documents (97%) open
+    // with the same municipal letterhead before their first article. Excerpting
+    // from character zero made every card on the index page read identically —
+    // "Coronel de Marina Leonardo Rosales Presidencia… Honorable Concejo
+    // Deliberante…" — which tells a visitor nothing about the ordinance.
+    const text =
+      'Coronel de Marina Leonardo Rosales Presidencia\n' +
+      'Honorable Concejo Deliberante – Partido Coronel de Marina Leonardo Rosales\n' +
+      'Ciudad de Punta Alta - Provincia de Buenos Aires\n\n' +
+      'Artículo 1º: MESA DEL AGUA: Créase la Mesa de Gestión del Agua en el Distrito.';
+    const excerpt = buildExcerpt(text);
+    expect(excerpt).toMatch(/^Artículo 1/);
+    expect(excerpt).toContain('MESA DEL AGUA');
+    expect(excerpt).not.toContain('Punta Alta - Provincia');
+  });
+
+  it('falls back to the start when a document has no article anchor', () => {
+    // 13 documents carry no anchor at all. They keep the previous behaviour
+    // rather than being dropped or given an invented opening.
+    const excerpt = buildExcerpt('Texto sin estructura de articulado alguna.');
+    expect(excerpt).toBe('Texto sin estructura de articulado alguna.');
+  });
 });
