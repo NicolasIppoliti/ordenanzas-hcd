@@ -1,0 +1,127 @@
+---
+// What is in this archive, stated as proportion. Nothing else on the site
+// answers that question: search assumes you know what to type, and the browse
+// page only answers it once you are already there.
+//
+// The bars are counts, not emphasis. A longer bar means more documents were
+// sanctioned that year and nothing else — no ranking, no reading of why. The
+// undated group gets the same treatment as any year because at 223 of 1,038 it
+// is the LARGEST group in the archive — twice the fullest year, which is 2021 at
+// 108 — and D10 forbids inferring a date for it.
+//
+// Drawn with an inline width on a CSS rule: no script, no image, no request.
+import { groupByYear } from '../lib/browse';
+import type { ManifestDocument } from '../lib/contract';
+
+interface Props {
+  documents: readonly ManifestDocument[];
+}
+
+const { documents } = Astro.props;
+const { years, undated } = groupByYear(documents);
+
+const rows = [
+  ...years.map(({ year, documents: group }) => ({
+    label: String(year),
+    href: `/documentos#anio-${year}`,
+    count: group.length,
+  })),
+  ...(undated.length > 0
+    ? [
+        {
+          // "Sin año" rather than the filter's "Año no determinado": in an
+          // 11ch column the longer phrase wraps to two lines and breaks the
+          // row's alignment. It says the same thing, and the page it links to
+          // carries the full label as its heading.
+          label: 'Sin año',
+          href: '/documentos#anio-sin-determinar',
+          count: undated.length,
+        },
+      ]
+    : []),
+];
+
+// Relative to the LARGEST ROW, which today is the undated group at 223 — not to
+// the fullest year. Every bar on screen is therefore comparable to every other
+// one, which is the only reading that does not misstate the undated group.
+// Scaling to the fullest year instead would push that bar past 100%.
+const largestRow = Math.max(...rows.map((row) => row.count), 1);
+---
+
+<ul class="year-strip">
+  {
+    rows.map((row) => (
+      <li>
+        <a href={row.href}>
+          <span class="year">{row.label}</span>
+          <span class="bar">
+            <span class="fill" style={`width: ${Math.round((row.count / largestRow) * 100)}%`} />
+          </span>
+          <span class="count">{row.count}</span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .year-strip {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .year-strip a {
+    display: grid;
+    /* The undated label is a phrase, not a year, so the first column is sized
+       for the widest thing it has to hold. */
+    grid-template-columns: 11ch 1fr 4ch;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-1) var(--space-2);
+    margin-inline: calc(var(--space-2) * -1);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: inherit;
+  }
+  .year-strip a:hover {
+    background: var(--bg-surface);
+  }
+  .year {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-sm);
+    color: var(--link);
+    font-weight: var(--weight-medium);
+  }
+  .bar {
+    height: 0.625rem;
+    border-radius: 2px;
+    background: var(--border);
+    display: block;
+  }
+  .fill {
+    display: block;
+    height: 100%;
+    /* 2002 and 2012 hold one document each: at true proportion their bar is
+       under a pixel and reads as zero, which is a different claim from "one".
+       The floor is the smallest mark that still says "some". */
+    min-width: 3px;
+    border-radius: 2px;
+    background: var(--link);
+  }
+  .count {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  @media (max-width: 34rem) {
+    .year-strip a {
+      grid-template-columns: 9ch 1fr 4ch;
+      gap: var(--space-2);
+    }
+  }
+</style>

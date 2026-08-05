@@ -54,7 +54,7 @@ const AGUA_DOC = baseDoc({
 });
 
 // A real no_text scanned document: number, title and expediente present,
-// but the "Texto" section carries no body text, per data.ts (loadDocumentText
+// but the "Texto" section carries no body text, per data.ts (loadDocumentBody
 // returns null for anything other than 'ok').
 const NO_TEXT_DOC = baseDoc({
   doc_id: '3120-plan-de-obras',

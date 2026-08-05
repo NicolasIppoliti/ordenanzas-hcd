@@ -1,48 +1,111 @@
 ---
-// D12: copy counts documents, never ordinances. "Recent" here means most
-// recently sanctioned by year (nulls last) — the closest reading of
-// "ordenanzas recientes" the manifest actually supports.
+// The home page answers two questions in order: "what can I do here" and "what
+// is in here". It used to answer neither — it described the system, offered four
+// competing entry points, and listed recent documents with the browser's default
+// bullets under thirty words of uppercase letterhead.
+//
+// The search band in the header is now the only search entry above the fold.
+// The year strip is the second question: it is the one place on the site that
+// says how much there is and from when.
+//
+// D12: copy counts documents, never ordinances. "Recent" means the highest
+// ordinance number within the most recent stated year — the closest reading of
+// recency the manifest supports, since no record carries a sanction date.
+//
+// The tiebreak inside a year is load-bearing, not decoration: 2026 holds nine
+// records and this list shows eight. Ordering by doc_id instead dropped 4457,
+// the highest number in the archive, from a section headed "lo último".
+//
+// The copy speaks to a resident and takes every number from the manifest. It
+// says nothing about the body that publishes these documents. That restraint is
+// a written rule of this project and also plain sense: the archive is
+// unofficial and exists because the HCD tolerates it, so any sentence whose
+// energy came from an enemy would be aimed at the only enemy available.
 import Layout from '../components/Layout.astro';
 import DocCard from '../components/DocCard.astro';
-import { getDocuments, loadDocumentText } from '../lib/data';
-import { buildExcerpt } from '../lib/excerpt';
+import YearStrip from '../components/YearStrip.astro';
+import { getDocuments } from '../lib/data';
 
 const documents = getDocuments();
 const total = documents.length.toLocaleString('es-AR');
 
 const recent = [...documents]
   .sort((a, b) => {
-    if (a.year === null && b.year === null) return a.doc_id.localeCompare(b.doc_id, 'es');
-    if (a.year === null) return 1;
-    if (b.year === null) return -1;
-    if (a.year !== b.year) return b.year - a.year;
+    if (a.year !== b.year) {
+      // A record with no year cannot be placed on the timeline, so it goes last
+      // rather than being guessed into one (D10).
+      if (a.year === null) return 1;
+      if (b.year === null) return -1;
+      return b.year - a.year;
+    }
+    if (a.number !== b.number) {
+      if (a.number === null) return 1;
+      if (b.number === null) return -1;
+      return b.number - a.number;
+    }
     return a.doc_id.localeCompare(b.doc_id, 'es');
   })
-  .slice(0, 20);
+  .slice(0, 8);
 ---
 
 <Layout
-  title={`Archivo de Ordenanzas del HCD — ${total} documentos`}
-  description={`Archivo consultable de ${total} documentos publicados por el Honorable Concejo Deliberante de Coronel Rosales.`}
+  title={`Buscá cualquier ordenanza de Coronel Rosales — ${total} documentos`}
+  description={`Los ${total} documentos publicados por el Honorable Concejo Deliberante de Coronel Rosales, completos y consultables.`}
 >
-  <h1>Archivo de Ordenanzas del HCD de Coronel Rosales</h1>
-  <p>{total} documentos del HCD, reproducidos tal como fueron publicados.</p>
-  <p>
-    <a href="/buscar">Buscar en {total} documentos</a>
-  </p>
-  <p>
-    {/* Browsing is the path for a reader who knows roughly when but not what to
-        type — DESIGN.md risk 3. It sits beside search, not beneath it. */}
-    <a href="/documentos">Ver todos los documentos por año</a>
+  <h1>Buscá cualquier ordenanza de Coronel Rosales</h1>
+  {/* D12: the copy counts documentos, never ordenanzas — 51 records carry no
+      number and seven document types are in here, so "1.038 ordenanzas" would
+      be a claim the manifest does not support. The h1 is an action, not a
+      count, which is why it may say "ordenanza". */}
+  <p class="lede">
+    {total} documentos que publicó el Concejo Deliberante, completos y gratis. Sin trámite, sin
+    usuario y sin tener que saber el número.
   </p>
 
-  <h2>Documentos recientes</h2>
-  <ul class="doc-list">
-    {
-      recent.map((doc) => {
-        const text = loadDocumentText(doc);
-        return <DocCard doc={doc} excerpt={buildExcerpt(text)} />;
-      })
-    }
-  </ul>
+  <section aria-labelledby="que-hay">
+    <h2 id="que-hay">Y si no sabés el número, empezá por el año</h2>
+    <YearStrip documents={documents} />
+  </section>
+
+  <section aria-labelledby="ultimos">
+    {/* Not "lo último que sancionó el Concejo". This list carries no type
+        filter, and the archive holds 28 convenios, 8 anexos, a resolución and a
+        decreto: a convenio is signed and a decreto is dictado, so the heading
+        would assert a legislative act that did not happen the first time a
+        non-ordenanza reaches the top. It also has no sanction date to work
+        from, so the heading says which ordering it is showing instead of
+        claiming recency it cannot establish. */}
+    <h2 id="ultimos">Lo más nuevo del archivo, por año y número</h2>
+    <ul class="doc-list">
+      {recent.map((doc) => <DocCard doc={doc} />)}
+    </ul>
+  </section>
 </Layout>
+
+<style>
+  .lede {
+    font-size: var(--text-lg);
+    line-height: var(--leading-normal);
+    color: var(--text-muted);
+    max-width: var(--measure);
+    margin: var(--space-3) 0 0;
+  }
+
+  section {
+    margin-top: var(--space-12);
+  }
+  section h2 {
+    font-size: var(--text-xl);
+    margin: 0;
+  }
+
+  /* This rule must live here, with the element. Astro scopes styles per
+     component: a `.doc-list` class used in this file and defined anywhere else
+     ships a selector that matches nothing — which is exactly how these
+     documents ended up rendering with the browser's default bullets. */
+  .doc-list {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+  }
+</style>
