@@ -4,7 +4,7 @@
 // route is derived, never a hardcoded count (D7).
 import Layout from '../../components/Layout.astro';
 import type { ManifestDocument } from '../../lib/contract';
-import { getDocuments, loadDocumentText } from '../../lib/data';
+import { getDocuments, loadDocumentBody } from '../../lib/data';
 import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
 import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
 import { getAnioFilterValue, getTextoFilterValue, getTipoFilterValue } from '../../lib/search';
@@ -37,7 +37,22 @@ interface Props {
 const { doc, related = [], siblings = [] } = Astro.props as Props;
 const heading = formatDocHeading(doc);
 const identifier = formatDocIdentifier(doc);
-const text = loadDocumentText(doc);
+const body = loadDocumentBody(doc);
+const rawText = body?.text ?? null;
+// PDF extraction preserves the source's leading and trailing whitespace — this
+// corpus averages ~31 blank characters before the first word, which `pre-wrap`
+// renders faithfully as a hole between the heading and the text. Trimming the
+// ENDS is presentation, not editing: no word, line break or internal spacing of
+// the document is touched, so the transcript stays exactly what the HCD published.
+const text = rawText === null ? null : rawText.trim();
+// A reader thinks in pages, not characters. 676.897 caracteres is a true
+// number that tells a neighbour nothing; "207 páginas" tells them whether to
+// open it on a phone.
+const pageCount = body?.pages ?? null;
+const sizeLabel =
+  pageCount !== null
+    ? `${pageCount.toLocaleString('es-AR')} páginas`
+    : `${(text?.length ?? 0).toLocaleString('es-AR')} caracteres`;
 
 // Task 4a.12a: 11 documents carry more than 50 KB of extracted text (the
 // largest is 207 pages / 708 KB). The full body MUST stay in the DOM so
@@ -114,7 +129,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
       {
         text !== null && isLargeText && (
           <details>
-            <summary>Ver texto completo ({text.length.toLocaleString('es-AR')} caracteres)</summary>
+            <summary>Ver texto completo ({sizeLabel})</summary>
             <div class="doc-text">{text}</div>
           </details>
         )
@@ -139,14 +154,91 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 </Layout>
 
 <style>
+  /* The reading surface. Everything here serves one person: someone looking up a
+     regulation on a phone, sometimes across 207 pages. */
   .doc-text {
     white-space: pre-wrap;
+    /* The single most effective decision in a reading interface. Past ~75
+       characters the eye loses the line return, and the longest document in this
+       archive is a 207-page tariff schedule. */
+    max-width: var(--measure);
+    font-size: var(--text-base);
+    line-height: var(--leading-prose);
+    /* Extracted PDF text arrives with the source's own line breaks, so it is
+       already ragged. Hyphenation stops long Spanish legal compounds from
+       tearing the right edge open on a narrow screen. */
+    hyphens: auto;
+    overflow-wrap: break-word;
+    margin-top: var(--space-6);
+  }
+
+  /* Metadata reads as a reference table, not as prose: label and value on one
+     line, labels quiet, values carrying the weight. */
+  .metadata {
+    margin: var(--space-6) 0;
+    padding: var(--space-4);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
   }
   .metadata div {
     display: flex;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    padding-block: var(--space-1);
   }
-  dt {
-    font-weight: 600;
+  .metadata dt {
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+    min-width: 9ch;
+  }
+  .metadata dd {
+    margin: 0;
+  }
+
+  /* Sibling and related-document lists. Proximity does the grouping: the gap
+     inside a list is smaller than the gap that separates it from the text. */
+  section[aria-label] {
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+  section[aria-label] h2 {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-3);
+  }
+  section[aria-label] ul {
+    margin: 0;
+    padding-left: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* The nine documents over 50 KB of text. The full body stays in the DOM so
+     Pagefind indexes it — collapsing is about not dropping a reader into 207
+     pages unannounced, not about shipping fewer bytes. */
+  details {
+    margin-top: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+  details > summary {
+    cursor: pointer;
+    font-weight: var(--weight-medium);
+    /* A summary is a control, so it gets a real touch target. */
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+  }
+  details[open] > summary {
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  a[href$='.pdf'] {
+    font-weight: var(--weight-medium);
   }
 </style>

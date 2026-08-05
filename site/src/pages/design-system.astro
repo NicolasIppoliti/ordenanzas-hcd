@@ -1,0 +1,268 @@
+---
+// The system, visible. Without this page nobody knows what already exists, and
+// in three weeks there is a second primary button.
+//
+// Excluded from search (`data-pagefind-ignore`) and from indexing: it is a
+// developer surface inside a public archive of municipal documents, and it has
+// no business appearing in a resident's search results.
+import Layout from '../components/Layout.astro';
+
+const neutral = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+const blue = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+const typeScale = [
+  ['--text-2xl', '30px', 'Título de página'],
+  ['--text-xl', '24px', 'Título de sección'],
+  ['--text-lg', '20px', 'Lead, título de resultado'],
+  ['--text-base', '17px', 'Cuerpo y texto del documento'],
+  ['--text-sm', '15px', 'Secundario, metadatos'],
+  ['--text-xs', '13px', 'Etiquetas'],
+];
+
+const spacing = [1, 2, 3, 4, 6, 8, 12, 16];
+---
+
+<Layout
+  title="Sistema de diseño — Archivo de Ordenanzas del HCD"
+  description="Referencia interna de tokens y componentes."
+>
+  <div data-pagefind-ignore>
+    <h1>Sistema de diseño</h1>
+    <p class="muted">
+      Referencia interna. Todo componente lee tokens; ningún valor crudo vive en un componente.
+    </p>
+
+    <section aria-labelledby="color">
+      <h2 id="color">Color</h2>
+      <p class="muted">
+        Dos familias y un ámbar. El azul tinta lee «documento oficial» sin leer como ningún
+        bloque político, que en este corpus es un requisito de producto y no una preferencia.
+      </p>
+      <h3>Neutral</h3>
+      <div class="swatches">
+        {neutral.map((step) => (
+          <div class="swatch">
+            <span style={`background: var(--n-${step})`}></span>
+            <code>--n-{step}</code>
+          </div>
+        ))}
+      </div>
+      <h3>Azul tinta</h3>
+      <div class="swatches">
+        {blue.map((step) => (
+          <div class="swatch">
+            <span style={`background: var(--b-${step})`}></span>
+            <code>--b-{step}</code>
+          </div>
+        ))}
+      </div>
+      <h3>Semánticos</h3>
+      <p class="muted">
+        Los que consumen los componentes. Cambian con el tema del sistema operativo; el par de
+        menor contraste medido es 5,84:1 en claro y 8,55:1 en oscuro, contra un mínimo de 4,5:1.
+      </p>
+      <ul class="tokens">
+        <li><code>--text</code> · texto de cuerpo</li>
+        <li><code>--text-muted</code> · secundario</li>
+        <li><code>--link</code> / <code>--link-hover</code></li>
+        <li><code>--border</code> / <code>--border-strong</code></li>
+        <li><code>--bg</code> / <code>--bg-surface</code></li>
+        <li><code>--notice-bg</code> / <code>--notice-border</code> / <code>--notice-text</code></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="tipografia">
+      <h2 id="tipografia">Tipografía</h2>
+      <p class="muted">
+        Stack del sistema, sin webfonts. El cuerpo es 17px y no los 15px de una app: acá se leen
+        documentos legales de hasta 207 páginas en un teléfono.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Tamaño</th><th>Uso</th></tr>
+        </thead>
+        <tbody>
+          {typeScale.map(([token, size, use]) => (
+            <tr>
+              <td><code>{token}</code></td>
+              <td style={`font-size: var(${token})`}>{size}</td>
+              <td>{use}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="muted">
+        Medida de línea: <code>--measure</code> = 68ch. Más allá de ~75 caracteres el ojo pierde
+        el retorno de línea.
+      </p>
+    </section>
+
+    <section aria-labelledby="spacing">
+      <h2 id="spacing">Espaciado</h2>
+      <p class="muted">Base 4. Faltan pasos a propósito: el hueco empuja al escalón, no al invento.</p>
+      <div class="spacing">
+        {spacing.map((step) => (
+          <div class="spacing-row">
+            <code>--space-{step}</code>
+            <span style={`width: var(--space-${step})`}></span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="estados">
+      <h2 id="estados">Controles y estados</h2>
+      <p class="muted">
+        Los estados que no se ven son los que no existen. Este sitio no tiene formularios de
+        carga, así que no hay <em>error</em>, <em>success</em> ni <em>loading</em>: inventarlos
+        sería documentar algo que ningún componente consume.
+      </p>
+      <div class="states">
+        <div>
+          <p class="label">Botón — default / hover / disabled</p>
+          <button type="button" class="demo-btn">Buscar</button>
+          <button type="button" class="demo-btn is-hover">Buscar</button>
+          <button type="button" class="demo-btn" disabled>Buscar</button>
+        </div>
+        <div>
+          <p class="label">Campo — default / foco</p>
+          <input type="search" placeholder="Número, expediente…" />
+          <input type="search" placeholder="Con foco" class="is-focus" />
+        </div>
+        <div>
+          <p class="label">Enlace</p>
+          <p><a href="#color">Enlace en reposo</a> · <a href="#color" class="is-hover">hover</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="avisos">
+      <h2 id="avisos">Aviso de archivo desactualizado</h2>
+      <p class="muted">
+        Única señal ámbar del sitio, y la única con regla lateral: el color no puede ser la única
+        señal, porque ~8% de los lectores no lo distingue.
+      </p>
+      <p id="staleness-notice-demo">
+        Este archivo no se sincroniza desde hace más de 30 días. Consulte el PDF oficial del HCD.
+      </p>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  section {
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+  h3 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-2);
+  }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  .swatch span {
+    display: block;
+    height: var(--space-12);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .swatch code {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+  .tokens {
+    padding-left: var(--space-6);
+    line-height: var(--leading-prose);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: var(--text-sm);
+  }
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+    vertical-align: baseline;
+  }
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding-block: var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .spacing-row code {
+    min-width: 9ch;
+    color: var(--text-muted);
+  }
+  .spacing-row span {
+    display: block;
+    height: var(--space-3);
+    background: var(--b-400);
+    border-radius: var(--radius-sm);
+  }
+  .states > div {
+    margin-bottom: var(--space-6);
+  }
+  .label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    margin-bottom: var(--space-2);
+  }
+  .demo-btn {
+    font: inherit;
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    color: var(--bg);
+    background: var(--link);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    min-height: 3rem;
+    cursor: pointer;
+  }
+  .demo-btn.is-hover {
+    background: var(--link-hover);
+  }
+  .demo-btn:disabled {
+    background: var(--n-500);
+    cursor: not-allowed;
+  }
+  input[type='search'] {
+    font: inherit;
+    font-size: var(--text-base);
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    min-height: 3rem;
+    width: 100%;
+    max-width: 22rem;
+    margin-bottom: var(--space-2);
+  }
+  input.is-focus {
+    border-color: var(--focus);
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  a.is-hover {
+    color: var(--link-hover);
+  }
+  #staleness-notice-demo {
+    color: var(--notice-text);
+    background: var(--notice-bg);
+    border: 1px solid var(--notice-border);
+    border-left-width: 4px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+</style>

@@ -1,10 +1,19 @@
 ---
 // Provenance-and-staleness spec, "Discreet Footer Attribution Only": the
 // ONLY place Fragua is credited, and no header/banner/logo brands the
-// archive elsewhere.
+// archive elsewhere. The provenance block lives here too — see Provenance.astro.
+import Provenance from './Provenance.astro';
+import type { SyncStatus } from '../lib/data';
+
+interface Props {
+  syncStatus: SyncStatus;
+}
+
+const { syncStatus } = Astro.props;
 ---
 
 <footer data-pagefind-ignore>
+  <Provenance syncStatus={syncStatus} />
   <p>
     Herramienta no oficial publicada por <a href="https://fragua.dev">Fragua</a>.
   </p>

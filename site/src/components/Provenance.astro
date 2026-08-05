@@ -4,7 +4,12 @@
 // recent ATTEMPT) is deliberately never read here — only
 // `last_success_at` reaches the visitor, per "Last-Attempt Status Never
 // Visitor-Facing".
-import StalenessNotice from './StalenessNotice.astro';
+//
+// This renders in the FOOTER. The spec requires the date and the disclaimer on
+// every page, not above every page: on a phone they pushed the document title
+// — the one thing a reader arriving from search needs — below the fold. The
+// staleness NOTICE is different and stays at the top of `main`, because a
+// warning that the data may be wrong has to be read before the data.
 import type { SyncStatus } from '../lib/data';
 
 interface Props {
@@ -25,10 +30,6 @@ const lastSyncDate = new Date(syncStatus.last_success_at).toLocaleDateString('es
       >{lastSyncDate}</time
     >.
   </p>
-  <StalenessNotice
-    lastSuccessAt={syncStatus.last_success_at}
-    thresholdDays={syncStatus.staleness_threshold_days}
-  />
   <p class="disclaimer">
     Esta es una herramienta de consulta no oficial. Ante cualquier discrepancia, prevalece el PDF
     oficial publicado por el HCD.

@@ -71,11 +71,18 @@ export function loadSyncStatus(filePath: string = DEFAULT_SYNC_STATUS_PATH): Syn
  * text to begin with (D2/D13).
  */
 export function loadDocumentText(doc: ManifestDocument): string | null {
+  return loadDocumentBody(doc)?.text ?? null;
+}
+
+/** Text plus the page count, which is what a reader understands. */
+export function loadDocumentBody(
+  doc: ManifestDocument
+): { text: string; pages: number | null } | null {
   if (doc.status !== 'ok' || doc.text_path === null) return null;
   const filePath = path.join(REPO_ROOT, doc.text_path);
   const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
   if (typeof raw.text !== 'string') {
     throw new Error(`${filePath}: expected a string "text" field`);
   }
-  return raw.text;
+  return { text: raw.text, pages: typeof raw.pages === 'number' ? raw.pages : null };
 }
