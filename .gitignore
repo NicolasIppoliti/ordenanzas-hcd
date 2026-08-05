@@ -35,3 +35,6 @@ __pycache__/
 # than from version control.
 # Local Pi runtime state
 .atl/
+
+# Playwright MCP scratch: browser snapshots and console logs from verification runs
+.playwright-mcp/
