@@ -4,7 +4,7 @@
 // route is derived, never a hardcoded count (D7).
 import DocumentText from '../../components/DocumentText.astro';
 import Layout from '../../components/Layout.astro';
-import type { ManifestDocument } from '../../lib/contract';
+import type { ManifestDocument, Status } from '../../lib/contract';
 import { getDocuments, loadDocumentBody } from '../../lib/data';
 import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
 import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
@@ -55,11 +55,22 @@ const sizeLabel =
     ? `${pageCount.toLocaleString('es-AR')} páginas`
     : `${(text?.length ?? 0).toLocaleString('es-AR')} caracteres`;
 
-// Task 4a.12a: 9 documents carry more than 50 KB of extracted text (the
-// largest is 207 pages / 708 KB). The full body MUST stay in the DOM so
+// Task 4a.12a: 9 documents carry more than 50,000 characters of extracted text
+// (the threshold below counts characters, not bytes; the
+// largest is 207 pages: 676,955 characters, 692 KB of UTF-8). The full body
+// MUST stay in the DOM so
 // Pagefind indexes it in 4b — truncation is not acceptable. A closed
 // <details> is progressive disclosure that keeps every byte in the markup.
 const LARGE_TEXT_THRESHOLD = 50_000;
+
+/* Every status the contract allows, so a new one cannot silently render a blank
+   section — `Record<Status, string>` makes that a type error instead. */
+const NO_TEXT_REASON: Record<Status, string> = {
+  ok: 'El texto no pudo leerse.',
+  no_text: 'Sin texto indexado.',
+  pending: 'Todavía sin procesar. Se indexará en la próxima sincronización.',
+  error: 'La última sincronización falló para este documento.',
+};
 const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 ---
 
@@ -125,7 +136,13 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     <section aria-label="Texto del documento">
       <h2>Texto</h2>
-      {doc.status === 'no_text' && <p class="muted">Sin texto indexado.</p>}
+      {
+        /* Fail visibly: every status that carries no text says why. `pending` and
+           `error` are in the contract and reachable from a partial sync, and a
+           section with a heading and nothing under it is the silent incomplete
+           page the rules forbid. */
+        text === null && <p class="muted">{NO_TEXT_REASON[doc.status]}</p>
+      }
       {text !== null && !isLargeText && <DocumentText text={text} />}
       {
         text !== null && isLargeText && (
@@ -139,8 +156,10 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     {
       related.length > 0 && (
-        <section aria-label="Ordenanzas relacionadas" data-pagefind-ignore>
-          <h2>Ordenanzas relacionadas</h2>
+        <section aria-label="Documentos relacionados" data-pagefind-ignore>
+          {/* Not "Ordenanzas": the related index does not filter by type, and the
+              archive holds convenios, decretos, resoluciones and anexos too. */}
+          <h2>Documentos relacionados</h2>
           <ul>
             {related.map((target) => (
               <li>
@@ -155,7 +174,6 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 </Layout>
 
 <style>
-
   /* Metadata reads as a reference table, not as prose: label and value on one
      line, labels quiet, values carrying the weight. */
   .metadata {
