@@ -20,14 +20,17 @@ from typing import cast
 from hcd_sync import aliases as aliases_mod
 from hcd_sync import (
     archive,
+    crossrefs,
+    extract,
     http_client,
     manifest_writer,
     sync_status,
     unresolved,
+    unresolved_references,
 )
 from hcd_sync import manifest as manifest_mod
 from hcd_sync.archive import Fetcher, FetchExhaustedError
-from hcd_sync.doc_meta import build_doc_meta, with_number_variants
+from hcd_sync.doc_meta import build_doc_meta, derive_year, with_number_variants
 from hcd_sync.http_client import (
     BoundedRetryFetcher,
     HostPolicy,
@@ -284,6 +287,12 @@ def run_sync(
     if limit is not None:
         to_fetch = to_fetch[:limit]
 
+    # Tracks every document this run actually extracted (or attempted to),
+    # so cross-references can be detected once the full, final `documents`
+    # list -- and therefore the full manifest number index -- is known.
+    # (title, own_number, body_text) -- body_text is None for `no_text`.
+    extracted_this_run: list[tuple[str, str | None, int | None, str | None]] = []
+
     fetch_exhausted = False
     if not dry_run:
         local_store = LocalArchiveStore(root=archive_dir)
@@ -302,7 +311,67 @@ def run_sync(
                 fetch_exhausted = True
                 break
 
+            if fetch_fields.get("status") == "ok":
+                # Fetch/archive succeeded -- extract per design.md's Data
+                # Flow ("fetch -> sha256 -> archive -> PyMuPDF extract").
+                pdf_bytes = local_store.read(doc_id)
+                listing_record = listing_records[doc_id]
+                extraction_fields, document_json = extract.build_extraction_fields(
+                    doc_id=doc_id,
+                    number=cast("int | None", listing_record.get("number")),
+                    sha256=cast("str | None", fetch_fields.get("sha256")),
+                    pdf_bytes=pdf_bytes,
+                    now=cast("str", fetch_fields["fetched_at"]),
+                )
+                fetch_fields = {**fetch_fields, **extraction_fields}
+                body_text = None
+                if document_json is not None:
+                    _write_json(data_dir / "documents" / f"{doc_id}.json", document_json)
+                    body_text = cast("str", document_json["text"])
+
+                    # D10 step 2: the year may live only in the document's own
+                    # `Punta Alta, ... de {yyyy}` line. That is a transcription of a date
+                    # the source printed, not an inference, so it does not breach the
+                    # no-fabrication rule. It runs only when steps 1 (expediente) left the
+                    # year absent, and it never consults the upload path.
+                    if listing_record.get("year") is None:
+                        header_year = derive_year(expediente=None, header_text=body_text)
+                        if header_year is not None:
+                            fetch_fields = {**fetch_fields, "year": header_year}
+                extracted_this_run.append(
+                    (
+                        doc_id,
+                        cast("str | None", listing_record.get("title")),
+                        cast("int | None", listing_record.get("number")),
+                        body_text,
+                    )
+                )
+
             documents = manifest_mod.upsert_fetch_result(documents, doc_id, fetch_fields)
+
+    # --- Cross-reference detection + manifest-gated resolution (design.md
+    # D5), run once the full, final `documents` list is known so the
+    # manifest number index reflects every record this run touched. Only
+    # documents actually extracted this run are (re)scanned -- an
+    # already-settled record keeps its previously resolved
+    # `cross_references` untouched. ---
+    unresolved_reference_entries: list[JsonDict] = []
+    if extracted_this_run:
+        number_index = crossrefs.build_manifest_number_index(documents)
+        for doc_id, title, own_number, body_text in extracted_this_run:
+            candidates = crossrefs.detect_references(
+                title=title, body=body_text, own_number=own_number
+            )
+            resolved, unresolved_entries = crossrefs.gate_candidates(
+                doc_id, candidates, number_index
+            )
+            documents = crossrefs.apply_cross_references(documents, doc_id, resolved)
+            unresolved_reference_entries.extend(unresolved_entries)
+
+        _write_json(
+            data_dir / "unresolved-references.json",
+            unresolved_references.to_json_dict(unresolved_reference_entries),
+        )
 
     manifest_changed = documents != previous_documents
     if manifest_changed or not (data_dir / "manifest.json").exists():
