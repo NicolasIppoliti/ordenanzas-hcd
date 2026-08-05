@@ -387,7 +387,21 @@ for operator spot-checking only and are never displayed.
 
 ### D6 — Operator escalation email: Resend on a dedicated subdomain
 
-**Choice: Resend HTTP API, sending from `bot@alerts.fragua.dev` to `hcd@fragua.dev`.**
+**Choice: Resend HTTP API, sending from `bot@fragua.dev` to `hcd@fragua.dev`.**
+
+**CORRECTED 2026-08-05 against the real zone.** This decision originally specified a
+dedicated `alerts.fragua.dev` sending subdomain, to avoid disturbing the apex SPF that
+Cloudflare Email Routing already uses. Measured, that concern does not exist: Resend
+isolates its return-path in `send.fragua.dev`, with its own MX
+(`feedback-smtp.sa-east-1.amazonses.com`) and its own SPF (`include:amazonses.com`), and
+never touches the apex TXT. The apex still reads `v=spf1 include:_spf.mx.cloudflare.net
+~all` with Resend fully verified alongside it, and the apex MX still points at Cloudflare
+Email Routing for receiving. One verified domain instead of two, which is also what the
+owner already runs for everything else.
+
+The subdomain would not merely have been redundant: `bot@alerts.fragua.dev` is not a
+domain Resend has verified, so every send would have failed with a 403 — and only on the
+day an alert was actually needed.
 
 | Option | Verdict |
 |---|---|

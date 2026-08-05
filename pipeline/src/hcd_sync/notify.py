@@ -23,7 +23,13 @@ from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
 RESEND_API_URL = "https://api.resend.com/emails"
-FROM_ADDRESS = "bot@alerts.fragua.dev"
+#: Must be a domain Resend has verified, or every send fails with a 403 — and it would
+#: fail only on the day an alert was actually needed. The design proposed a dedicated
+#: `alerts.` subdomain to keep Resend away from the apex SPF that Cloudflare Email Routing
+#: uses. Measured against the real zone, that concern does not apply: Resend isolates its
+#: return-path in `send.fragua.dev` (its own MX and SPF) and never touches the apex
+#: record, so the apex stays verified for one domain instead of two.
+FROM_ADDRESS = "bot@fragua.dev"
 TO_ADDRESS = "hcd@fragua.dev"
 SUBJECT = "hcd-sync: operator action required"
 _TIMEOUT_SECONDS = 10.0

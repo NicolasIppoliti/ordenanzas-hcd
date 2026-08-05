@@ -14,6 +14,7 @@ import logging
 
 import pytest
 
+from hcd_sync import notify
 from hcd_sync.notify import RESEND_API_URL, TO_ADDRESS, TransportResponse, send_alert
 
 FAKE_KEY = "re_supersecret_do_not_leak_1234567890"
@@ -98,3 +99,16 @@ def test_error_paths_never_log_the_api_key(
     for record in caplog.records:
         assert FAKE_KEY not in record.getMessage()
         assert FAKE_KEY not in repr(record.exc_info)
+
+
+def test_sender_uses_the_domain_actually_verified_in_resend() -> None:
+    """The From domain must be one Resend has verified, or every send 403s.
+
+    The design proposed `alerts.fragua.dev` to keep Resend away from the apex SPF that
+    Cloudflare Email Routing uses. Measured, that concern does not apply: Resend isolates
+    its return-path in `send.fragua.dev` and never touches the apex SPF, so the owner
+    verified `fragua.dev` itself. Sending from an unverified subdomain would fail only
+    when an alert was actually needed.
+    """
+    assert notify.FROM_ADDRESS.endswith("@fragua.dev")
+    assert "alerts.fragua.dev" not in notify.FROM_ADDRESS
