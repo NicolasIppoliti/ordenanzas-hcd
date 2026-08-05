@@ -13,6 +13,16 @@ node_modules/
 # Astro generated types
 .astro/
 
+# Secrets never live in this repository. It is PUBLIC, and every weekly sync
+# commits to it, so a stray .env would be published within days. RESEND_API_KEY,
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID belong in GitHub Actions secrets;
+# the pipeline reads them from the environment and never writes them anywhere.
+.env
+.env.*
+!.env.example
+.dev.vars
+.wrangler/
+
 # Tool caches — regenerated on every run, never reviewed
 __pycache__/
 *.py[cod]
