@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ordenanzas.fragua.dev/schemas/aliases.schema.json",
+  "title": "data/doc-id-aliases.json",
+  "description": "See design.md D11. Mirrored by site/src/lib/contract.ts's assertAliases.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "aliases"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string" },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["alias", "target", "created_at", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "alias": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 },
+          "created_at": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}
