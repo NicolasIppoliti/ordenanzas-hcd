@@ -254,7 +254,11 @@ describe('real built Pagefind index', () => {
     expect(hit).toBeDefined();
     const display = toDisplayResult(hit!);
     expect(display.tipo).toBe('Documento sin clasificar');
-    expect(display.title).not.toMatch(/^\d/); // no digit-led fabricated number
+    // The record has no number and no title, so the title slot must carry the
+    // type label — D8's identifier rule. Asserting only "does not start with a
+    // digit" could not fail: with no `meta.title`, `toDisplayResult` falls back
+    // to the URL, which always starts with a slash.
+    expect(display.title).toBe('Documento sin clasificar');
   });
 
   it('indexes nothing outside the article, which is what data-pagefind-body scopes', async () => {
@@ -275,8 +279,12 @@ describe('real built Pagefind index', () => {
     //
     // The first assertion is what stops this from passing vacuously: zero hits
     // proves nothing if the section never rendered.
-    expect(aguaHtml, 'the sibling section must be on the page').toContain(
-      'Archivos con el mismo número'
+    // The heading, not the aria-label: the label alone would satisfy this guard
+    // even if the visible content of the section were gone.
+    // Astro stamps scoping attributes on the tag, so the heading is matched as
+    // a pattern rather than a literal string.
+    expect(aguaHtml, 'the sibling section must be on the page').toMatch(
+      /<h2[^>]*>Archivos con el mismo número<\/h2>/
     );
     const search = await pagefind.search('Archivos con el mismo número');
     expect(search.results).toHaveLength(0);
