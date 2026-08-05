@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Estimated changed lines | 3,000–3,750 |
-| 800-line budget risk | High |
+| Review budget | 800 lines, raised to 1,200 when a split would be artificial |
 | Chained PRs recommended | Yes |
 | Delivery strategy | ask-on-risk |
 | Chain strategy | `feature-branch-chain` — confirmed by the product owner |
@@ -13,7 +13,11 @@
 Decision needed before apply: RESOLVED — the owner chose the feature-branch chain
 Chained PRs recommended: Yes
 Chain strategy: feature-branch-chain
-800-line budget risk: High — mitigated by the 8-slice chain; no single PR exceeds ~500 lines
+Review budget: 800 lines nominal, **1,200 when a smaller split would be artificial**
+(owner decision, 2026-08-05). The ceiling exists to keep review real, not to force a
+seam through code that belongs together — `slice/2b-ii-archive` at 836 is the case that
+prompted it, where the only remaining cut would have separated the archive writer from
+the loop that calls it.
 
 ### Slices (Feature Branch Chain: PR1→tracker, PR2a→PR1, PR2b→PR2a, PR3..5→prior branch)
 
@@ -67,9 +71,9 @@ rather than simply distributed. Sizes exclude lockfiles and the captured listing
 | `slice/3-iii-wiring` | 711 | extraction + header year + crossrefs wired in |
 | `slice/3-iv-contract` | 671 | JSON Schema + TypeScript mirror |
 
-Every PR is under the 800-line review budget except `2b-ii` at 836, 36 over: splitting it
-further would have separated the archive writer from the loop that calls it, which reads
-worse than the 36 lines cost.
+Every PR is within budget. `2b-ii` at 836 sits above the 800 nominal line but inside the
+1,200 ceiling the owner set for exactly this case: the only remaining cut would have
+separated the archive writer from the loop that calls it.
 
 The first attempt produced only six branches, with PR2b at 1,191 lines and PR3 at 1,883 —
 2.4x the budget. The forecast in the table above had said ~400 and ~450. That is the third
