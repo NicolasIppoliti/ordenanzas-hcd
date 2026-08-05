@@ -41,3 +41,4 @@ __pycache__/
 
 # Ad-hoc screenshots from design/verification work
 doc-*.png
+.gstack/
