@@ -21,5 +21,11 @@ export default defineConfig({
   // build (`Cannot read properties of undefined (reading 'reduce')`).
   // Slice 4a is the first slice with real pages, so it is enabled here
   // (task 4a.13).
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // The design-system reference is for whoever maintains this, not for a
+      // resident looking up a regulation.
+      filter: (page) => !page.includes('/design-system'),
+    }),
+  ],
 });

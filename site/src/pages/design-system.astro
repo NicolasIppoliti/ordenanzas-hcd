@@ -2,9 +2,11 @@
 // The system, visible. Without this page nobody knows what already exists, and
 // in three weeks there is a second primary button.
 //
-// Excluded from search (`data-pagefind-ignore`) and from indexing: it is a
-// developer surface inside a public archive of municipal documents, and it has
-// no business appearing in a resident's search results.
+// Excluded three ways, because one was not enough: `data-pagefind-ignore` keeps
+// it out of the site's own search, `noindex` keeps it out of Google, and the
+// sitemap filter keeps it out of what we hand to crawlers. It is a developer
+// surface inside a public archive of municipal documents and has no business
+// appearing in a resident's results.
 import Layout from '../components/Layout.astro';
 
 const neutral = [100, 200, 300, 400, 500, 600, 700, 800, 900];
@@ -25,6 +27,7 @@ const spacing = [1, 2, 3, 4, 6, 8, 12, 16];
 <Layout
   title="Sistema de diseño — Archivo de Ordenanzas del HCD"
   description="Referencia interna de tokens y componentes."
+  noindex
 >
   <div data-pagefind-ignore>
     <h1>Sistema de diseño</h1>

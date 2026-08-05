@@ -11,9 +11,11 @@ import { loadSyncStatus } from '../lib/data';
 interface Props {
   title: string;
   description?: string;
+  /** Developer surfaces opt out of search engines. Archive pages never do. */
+  noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
 const syncStatus = loadSyncStatus();
 ---
 
@@ -25,6 +27,7 @@ const syncStatus = loadSyncStatus();
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <style is:global>
       @import '../styles/tokens.css';
 
