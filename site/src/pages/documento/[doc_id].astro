@@ -7,6 +7,7 @@ import type { ManifestDocument } from '../../lib/contract';
 import { getDocuments, loadDocumentText } from '../../lib/data';
 import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
 import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
+import { getAnioFilterValue, getTextoFilterValue, getTipoFilterValue } from '../../lib/search';
 
 export async function getStaticPaths() {
   const documents = getDocuments();
@@ -48,6 +49,9 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
 <Layout title={heading} description={doc.title ?? identifier}>
   <article data-pagefind-body>
+    <span data-pagefind-filter={`tipo:${getTipoFilterValue(doc.doc_type)}`} hidden></span>
+    <span data-pagefind-filter={`anio:${getAnioFilterValue(doc.year)}`} hidden></span>
+    <span data-pagefind-filter={`texto:${getTextoFilterValue(doc.status)}`} hidden></span>
     <h1>{heading}</h1>
     {!doc.title && <p class="muted">Sin título descriptivo en el archivo de origen.</p>}
     {
@@ -89,7 +93,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     {
       siblings.length > 0 && (
-        <section aria-label="Archivos con el mismo número">
+        <section aria-label="Archivos con el mismo número" data-pagefind-ignore>
           <h2>Archivos con el mismo número</h2>
           <p>El HCD publicó más de un archivo con este número.</p>
           <ul>
@@ -119,7 +123,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 
     {
       related.length > 0 && (
-        <section aria-label="Ordenanzas relacionadas">
+        <section aria-label="Ordenanzas relacionadas" data-pagefind-ignore>
           <h2>Ordenanzas relacionadas</h2>
           <ul>
             {related.map((target) => (
