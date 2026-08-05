@@ -25,6 +25,23 @@ const syncStatus = loadSyncStatus();
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* A @font-face is not discoverable until the stylesheet has been fetched
+        and parsed, so without these the swap lands a full round trip late.
+        Both are used on every page, so neither preload is speculative. */}
+    <link
+      rel="preload"
+      href="/fonts/instrument-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/fraunces-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     {noindex && <meta name="robots" content="noindex, follow" />}
@@ -76,6 +93,14 @@ const syncStatus = loadSyncStatus();
       h1,
       h2,
       h3 {
+        /* Serif for every heading: it is the Argentine convention for legal
+           text, and it is most of what makes this read as a document archive
+           rather than a dashboard. The weight is pinned to the one the file
+           carries — asking for 700 does not fail, it makes the browser
+           synthesise a fake bold by smearing the outlines, on exactly the
+           lines a reader sees first. */
+        font-family: var(--font-serif);
+        font-weight: var(--weight-semibold);
         line-height: var(--leading-tight);
         /* Headings here are document titles, and a document title can run to a
            full sentence. Balancing the wrap keeps a lone orphan word off the
