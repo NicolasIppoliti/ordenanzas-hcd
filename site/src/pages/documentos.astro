@@ -1,0 +1,160 @@
+---
+// DESIGN.md risk 3: browse the whole corpus, not just search it.
+//
+// The peers in this category build faceted search because their corpora are
+// millions of records. This one is 1,038 — the whole archive fits on one page,
+// grouped by year. A resident often does not know the number; they know roughly
+// when. Search demands you know what to type; browsing does not.
+//
+// One page, not one page per year: a reader who guesses the wrong year finds
+// the right one by scrolling instead of by navigating, and Ctrl+F works over
+// the whole archive with no JavaScript at all.
+//
+// Measured cost of that choice: 185,386 bytes of HTML, 33,098 gzipped. It is by
+// far the heaviest page in the archive after the 207-page fiscal ordinance, and
+// it is the price of the whole corpus in one place. No JavaScript, no request
+// after the first.
+import Layout from '../components/Layout.astro';
+import { getDocuments } from '../lib/data';
+import { formatDocHeading } from '../lib/labels';
+import { getAnioFilterValue } from '../lib/search';
+import type { ManifestDocument } from '../lib/contract';
+
+const documents = getDocuments();
+const total = documents.length.toLocaleString('es-AR');
+
+// D10 forbids inferring a year, so the 223 documents whose source never stated
+// one cannot be filed under a guess. They get their own group, labelled with
+// the same words the search filter uses, and it goes last — not because it
+// matters less, but because it is the only group with no place on a timeline.
+const byYear = new Map<number, ManifestDocument[]>();
+const undated: ManifestDocument[] = [];
+for (const doc of documents) {
+  if (doc.year === null) {
+    undated.push(doc);
+    continue;
+  }
+  const group = byYear.get(doc.year);
+  if (group === undefined) byYear.set(doc.year, [doc]);
+  else group.push(doc);
+}
+
+// Within a year the manifest order is the source's own; sorting by doc_id makes
+// it stable across syncs without asserting anything about precedence.
+const years = [...byYear.keys()].sort((a, b) => b - a);
+for (const list of byYear.values()) list.sort((a, b) => a.doc_id.localeCompare(b.doc_id, 'es'));
+undated.sort((a, b) => a.doc_id.localeCompare(b.doc_id, 'es'));
+
+const undatedLabel = getAnioFilterValue(null);
+---
+
+<Layout
+  title={`Todos los documentos por año — Archivo del HCD`}
+  description={`Los ${total} documentos del Honorable Concejo Deliberante de Coronel Rosales, agrupados por año.`}
+>
+  <h1>Todos los documentos</h1>
+  <p>
+    Los {total} documentos del archivo, agrupados por el año que consta en el documento. Si
+    no sabés el número, esta es la forma de encontrarlo.
+  </p>
+
+  {/* The whole page is an index of links to documents that are themselves indexed.
+      Leaving it in Pagefind would put 1,038 titles into every query's haystack a
+      second time, which is the same reason the nav, the footer and the related
+      lists are ignored. */}
+  <div class="browse" data-pagefind-ignore>
+    <nav aria-label="Índice de años" class="year-index">
+      {years.map((year) => <a href={`#anio-${year}`}>{year}</a>)}
+      <a href="#anio-sin-determinar">{undatedLabel}</a>
+    </nav>
+
+    {
+      years.map((year) => (
+        <section aria-labelledby={`anio-${year}`}>
+          <h2 id={`anio-${year}`}>
+            {year} <span class="count">{byYear.get(year)?.length} documentos</span>
+          </h2>
+          <ul>
+            {(byYear.get(year) ?? []).map((doc) => (
+              <li>
+                <a href={`/documento/${doc.doc_id}`}>{formatDocHeading(doc)}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+
+    <section aria-labelledby="anio-sin-determinar">
+      <h2 id="anio-sin-determinar">
+        {undatedLabel} <span class="count">{undated.length} documentos</span>
+      </h2>
+      <p class="muted">
+        El HCD no consignó un año en estos documentos. El archivo no lo deduce: mostrar un
+        año inferido sería afirmar algo que la fuente no dice.
+      </p>
+      <ul>
+        {undated.map((doc) => (
+          <li>
+            <a href={`/documento/${doc.doc_id}`}>{formatDocHeading(doc)}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  /* The year index is the only navigation on the page, so it stays reachable
+     while scrolling 1,038 rows on a phone. */
+  .year-index {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    margin-bottom: var(--space-6);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .year-index a {
+    font-variant-numeric: tabular-nums;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .browse section {
+    margin-top: var(--space-8);
+  }
+  .browse h2 {
+    font-size: var(--text-xl);
+    font-variant-numeric: tabular-nums;
+    margin: 0 0 var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border);
+  }
+  /* The count is a fact about the group, not part of its name — it reads as
+     metadata beside the year rather than competing with it. */
+  .count {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-normal);
+    color: var(--text-muted);
+  }
+
+  .browse ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .browse li {
+    padding-block: var(--space-2);
+  }
+  .browse li + li {
+    border-top: 1px solid var(--border);
+  }
+  .muted {
+    color: var(--text-muted);
+    max-width: var(--measure);
+  }
+</style>
