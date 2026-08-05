@@ -184,8 +184,8 @@ in this PR opens a socket.
 
 ## Phase 3.5: First data import (PR3.5, own commit)
 
-- [ ] 3.5.1 Run full `hcd-sync run` on operator machine (~70 min, 1,038 docs)
-- [ ] 3.5.2 Commit generated `data/**` alone as `github-actions[bot]`, no authored code mixed
+- [x] 3.5.1 Run full `hcd-sync run` on operator machine (~70 min, 1,038 docs)
+- [x] 3.5.2 Commit generated `data/**` alone as `github-actions[bot]`, no authored code mixed
 
 ## Phase 4a: Site core (PR4a)
 
