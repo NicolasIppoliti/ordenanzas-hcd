@@ -1,0 +1,36 @@
+---
+// Provenance-and-staleness spec: always-visible last-sync date + the
+// unofficial-tool disclaimer, on every page. `last_run_status` (the most
+// recent ATTEMPT) is deliberately never read here — only
+// `last_success_at` reaches the visitor, per "Last-Attempt Status Never
+// Visitor-Facing".
+import StalenessNotice from './StalenessNotice.astro';
+import type { SyncStatus } from '../lib/data';
+
+interface Props {
+  syncStatus: SyncStatus;
+}
+
+const { syncStatus } = Astro.props;
+const lastSyncDate = new Date(syncStatus.last_success_at).toLocaleDateString('es-AR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<section aria-label="Estado del archivo" class="provenance">
+  <p>
+    Última sincronización con el HCD: <time datetime={syncStatus.last_success_at}
+      >{lastSyncDate}</time
+    >.
+  </p>
+  <StalenessNotice
+    lastSuccessAt={syncStatus.last_success_at}
+    thresholdDays={syncStatus.staleness_threshold_days}
+  />
+  <p class="disclaimer">
+    Esta es una herramienta de consulta no oficial. Ante cualquier discrepancia, prevalece el PDF
+    oficial publicado por el HCD.
+  </p>
+</section>

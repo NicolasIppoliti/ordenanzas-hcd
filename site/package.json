@@ -11,11 +11,14 @@
     "build:search": "pagefind --site dist"
   },
   "dependencies": {
-    "astro": "^4.16.0",
-    "@astrojs/sitemap": "^3.2.0"
+    "@astrojs/sitemap": "3.2.1",
+    "astro": "^4.16.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.0",
+    "@happy-dom/global-registrator": "^20.11.1",
+    "axe-core": "^4.12.1",
+    "happy-dom": "^20.11.1",
     "pagefind": "^1.1.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"

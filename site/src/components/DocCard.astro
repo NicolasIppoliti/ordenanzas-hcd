@@ -1,0 +1,26 @@
+---
+// D4/D8: renders a record's type + number/title exactly as the detail
+// heading does, plus the explicit muted line for a null title. Never
+// colour-only — the type label is always text (D8's "never colour-only"
+// requirement, checked in the search result surface too, in 4b).
+import type { ManifestDocument } from '../lib/contract';
+import { formatDocHeading } from '../lib/labels';
+
+interface Props {
+  doc: ManifestDocument;
+  excerpt?: string | null;
+}
+
+const { doc, excerpt = null } = Astro.props;
+const heading = formatDocHeading(doc);
+---
+
+<li class="doc-card">
+  <a href={`/documento/${doc.doc_id}`}>{heading}</a>
+  {
+    !doc.title && (
+      <p class="muted">Sin título descriptivo en el archivo de origen.</p>
+    )
+  }
+  {excerpt && <p class="excerpt">{excerpt}</p>}
+</li>

@@ -1,0 +1,148 @@
+---
+// Ordinance-detail spec + design.md D4/D5/D7/D8/D12: one route for every
+// record, type-neutral. getStaticPaths runs over the whole manifest — the
+// route is derived, never a hardcoded count (D7).
+import Layout from '../../components/Layout.astro';
+import type { ManifestDocument } from '../../lib/contract';
+import { getDocuments, loadDocumentText } from '../../lib/data';
+import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
+import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
+
+export async function getStaticPaths() {
+  const documents = getDocuments();
+  // Built once for the whole corpus, then handed to each page as a prop —
+  // recomputing the union per page would be O(n^2) over 1,038 records.
+  const relatedIndex = buildRelatedIndex(documents);
+  const byId = new Map(documents.map((doc) => [doc.doc_id, doc] as const));
+
+  return documents.map((doc) => {
+    const siblings = doc.number_variants
+      .filter((id) => id !== doc.doc_id)
+      .map((id) => byId.get(id))
+      .filter((sibling): sibling is ManifestDocument => sibling !== undefined);
+    return {
+      params: { doc_id: doc.doc_id },
+      props: { doc, related: relatedIndex.get(doc.doc_id) ?? [], siblings },
+    };
+  });
+}
+
+interface Props {
+  doc: ManifestDocument;
+  related?: RelatedTarget[];
+  siblings?: ManifestDocument[];
+}
+
+const { doc, related = [], siblings = [] } = Astro.props as Props;
+const heading = formatDocHeading(doc);
+const identifier = formatDocIdentifier(doc);
+const text = loadDocumentText(doc);
+
+// Task 4a.12a: 11 documents carry more than 50 KB of extracted text (the
+// largest is 207 pages / 708 KB). The full body MUST stay in the DOM so
+// Pagefind indexes it in 4b — truncation is not acceptable. A closed
+// <details> is progressive disclosure that keeps every byte in the markup.
+const LARGE_TEXT_THRESHOLD = 50_000;
+const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
+---
+
+<Layout title={heading} description={doc.title ?? identifier}>
+  <article data-pagefind-body>
+    <h1>{heading}</h1>
+    {!doc.title && <p class="muted">Sin título descriptivo en el archivo de origen.</p>}
+    {
+      doc.doc_type === 'sin clasificar' && (
+        <p class="muted">El origen no indica el tipo de este documento.</p>
+      )
+    }
+
+    <dl class="metadata">
+      <div>
+        <dt>Tipo de documento</dt>
+        <dd>{DOC_TYPE_LABELS[doc.doc_type]}</dd>
+      </div>
+      {
+        doc.number !== null && (
+          <div>
+            <dt>Número</dt>
+            <dd>{doc.number}</dd>
+          </div>
+        )
+      }
+      {
+        doc.expediente !== null && (
+          <div>
+            <dt>Expediente</dt>
+            <dd>{doc.expediente}</dd>
+          </div>
+        )
+      }
+      <div>
+        <dt>Año</dt>
+        <dd>{doc.year !== null ? doc.year : 'Año no determinado'}</dd>
+      </div>
+    </dl>
+
+    <p>
+      <a href={doc.source_url}>Ver el PDF oficial en hcdrosales.gob.ar</a>
+    </p>
+
+    {
+      siblings.length > 0 && (
+        <section aria-label="Archivos con el mismo número">
+          <h2>Archivos con el mismo número</h2>
+          <p>El HCD publicó más de un archivo con este número.</p>
+          <ul>
+            {siblings.map((sibling) => (
+              <li>
+                <a href={`/documento/${sibling.doc_id}`}>{formatDocHeading(sibling)}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <section aria-label="Texto del documento">
+      <h2>Texto</h2>
+      {doc.status === 'no_text' && <p class="muted">Sin texto indexado.</p>}
+      {text !== null && !isLargeText && <div class="doc-text">{text}</div>}
+      {
+        text !== null && isLargeText && (
+          <details>
+            <summary>Ver texto completo ({text.length.toLocaleString('es-AR')} caracteres)</summary>
+            <div class="doc-text">{text}</div>
+          </details>
+        )
+      }
+    </section>
+
+    {
+      related.length > 0 && (
+        <section aria-label="Ordenanzas relacionadas">
+          <h2>Ordenanzas relacionadas</h2>
+          <ul>
+            {related.map((target) => (
+              <li>
+                <a href={`/documento/${target.doc_id}`}>{formatDocHeading(target)}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </article>
+</Layout>
+
+<style>
+  .doc-text {
+    white-space: pre-wrap;
+  }
+  .metadata div {
+    display: flex;
+    gap: 0.5rem;
+  }
+  dt {
+    font-weight: 600;
+  }
+</style>

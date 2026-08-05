@@ -1,0 +1,125 @@
+---
+// Accessibility and Mobile Payload (design.md): html lang="es" (also
+// selects Pagefind's Spanish stemmer in 4b), semantic landmarks, one <h1>
+// per page (left to each page's own content), a skip link, focus-visible
+// never removed, no colour-only signalling, system font stack, 0 KB JS
+// except the staleness script pulled in via Provenance.
+import Footer from './Footer.astro';
+import Provenance from './Provenance.astro';
+import { loadSyncStatus } from '../lib/data';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const syncStatus = loadSyncStatus();
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <style>
+      :root {
+        color-scheme: light;
+        --fg: #1a1a1a;
+        --bg: #ffffff;
+        --muted: #55606b;
+        --link: #0a4f8f;
+        --border: #d0d5da;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        color: var(--fg);
+        background: var(--bg);
+        line-height: 1.5;
+      }
+      a {
+        color: var(--link);
+      }
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 0.5rem 1rem;
+        z-index: 10;
+        border: 2px solid var(--link);
+      }
+      .skip-link:focus {
+        left: 0.5rem;
+        top: 0.5rem;
+      }
+      :focus-visible {
+        outline: 3px solid var(--link);
+        outline-offset: 2px;
+      }
+      header,
+      main,
+      footer {
+        max-width: 60rem;
+        margin: 0 auto;
+        padding: 1rem 1.25rem;
+      }
+      header {
+        border-bottom: 1px solid var(--border);
+      }
+      nav a {
+        margin-right: 1rem;
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .provenance {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .disclaimer {
+        font-size: 0.85rem;
+      }
+      #staleness-notice {
+        color: #6b3d00;
+        border: 1px solid #d99a2b;
+        background: #fff6e5;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+      }
+      .muted {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+    <header>
+      <nav aria-label="Principal">
+        <a href="/">Archivo de Ordenanzas del HCD</a>
+        <a href="/acerca">Acerca de este archivo</a>
+      </nav>
+      <Provenance syncStatus={syncStatus} />
+    </header>
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

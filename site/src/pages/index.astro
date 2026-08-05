@@ -1,0 +1,43 @@
+---
+// D12: copy counts documents, never ordinances. "Recent" here means most
+// recently sanctioned by year (nulls last) — the closest reading of
+// "ordenanzas recientes" the manifest actually supports.
+import Layout from '../components/Layout.astro';
+import DocCard from '../components/DocCard.astro';
+import { getDocuments, loadDocumentText } from '../lib/data';
+import { buildExcerpt } from '../lib/excerpt';
+
+const documents = getDocuments();
+const total = documents.length.toLocaleString('es-AR');
+
+const recent = [...documents]
+  .sort((a, b) => {
+    if (a.year === null && b.year === null) return a.doc_id.localeCompare(b.doc_id);
+    if (a.year === null) return 1;
+    if (b.year === null) return -1;
+    if (a.year !== b.year) return b.year - a.year;
+    return a.doc_id.localeCompare(b.doc_id);
+  })
+  .slice(0, 20);
+---
+
+<Layout
+  title={`Archivo de Ordenanzas del HCD — ${total} documentos`}
+  description={`Archivo consultable de ${total} documentos publicados por el Honorable Concejo Deliberante de Coronel Rosales.`}
+>
+  <h1>Archivo de Ordenanzas del HCD de Coronel Rosales</h1>
+  <p>{total} documentos del HCD, reproducidos tal como fueron publicados.</p>
+  <p>
+    <a href="/buscar">Buscar en {total} documentos</a>
+  </p>
+
+  <h2>Documentos recientes</h2>
+  <ul class="doc-list">
+    {
+      recent.map((doc) => {
+        const text = loadDocumentText(doc);
+        return <DocCard doc={doc} excerpt={buildExcerpt(text)} />;
+      })
+    }
+  </ul>
+</Layout>
