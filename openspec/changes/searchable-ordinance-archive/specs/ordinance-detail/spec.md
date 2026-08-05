@@ -141,3 +141,64 @@ Detail pages MUST meet WCAG 2.1 AA and MUST be usable on a mobile screen.
 - WHEN they open a detail page
 - THEN semantic headings and landmarks convey metadata, text and the PDF
   link as distinct, labeled sections
+
+### Requirement: Extracted Text Renders the Document's Article Structure
+
+Where the extracted text exposes article headers, the detail page MUST render them
+as structure — the article label set apart from its text — rather than emitting the
+PDF's raw whitespace.
+
+A document's own articles run CONSECUTIVELY FROM 1. A header that breaks the run is an
+article the document is QUOTING — amending ordinances reproduce the article they modify
+verbatim, on its own line, in header form — and MUST stay inside the body of the article
+that quotes it. Measured: 77 of 894 documents contain such a quote, 573 headers in
+total; without this rule Ordenanza 3316, which has 11 articles, rendered `ARTICULO 321º`
+as its own.
+
+A document whose numbering does not begin at 1 MUST receive no article structure: there
+is no way to separate its own articles from quoted ones, and an invented sequence is
+worse than none. Six documents are in this position.
+
+Measured over the corpus: 875 of the 894 text-bearing documents render structure. The
+observed forms are `Artículo`, `ARTICULO`, `ARTÍCULO` and `Articulo`, followed by a
+number, an optional ordinal marker, and one of `:`, `.` or `.-`. The abbreviated `Art.`
+opens no line in the corpus and is not accepted.
+
+The system MUST NOT invent structure. Only text the source actually marked as an
+article becomes an article; everything before the first header, and every document
+with no header at all, is rendered as it is today.
+
+The rendered output MUST preserve the document's words exactly. Rendering may change
+whitespace and line breaks, which are artefacts of PDF extraction, and MUST NOT add,
+remove, reorder or reword anything else.
+
+#### Scenario: A document with article headers renders them as structure
+
+- GIVEN a document whose extracted text contains `Artículo 1º: MESA DEL AGUA: Créase…`
+  followed by `Artículo 2º: CONFORMACIÓN: …`
+- WHEN the detail page renders
+- THEN each article appears with its label separated from its body text
+- AND the words of each article are unchanged from the extracted text
+
+#### Scenario: A quoted article is not claimed as the document's own
+
+- GIVEN an ordinance whose article 2 reads `Modifícase el artículo 321º, el que quedará
+  redactado así:` followed by a line beginning `ARTICULO 321º:`
+- WHEN the detail page renders
+- THEN the quoted article does not appear as one of this document's articles
+- AND its text remains inside the body of the article that quotes it
+
+#### Scenario: A document with no article header is unchanged
+
+- GIVEN a document whose extracted text contains no recognisable article header
+- WHEN the detail page renders
+- THEN the text renders exactly as it does today, with its own line breaks preserved
+- AND no article structure is fabricated for it
+
+#### Scenario: Text before the first article is preserved
+
+- GIVEN a document whose text opens with a letterhead before `Artículo 1º`
+- WHEN the detail page renders
+- THEN that opening text is still present, rendered as a preamble rather than dropped
+- AND it is not misattributed to the first article
+

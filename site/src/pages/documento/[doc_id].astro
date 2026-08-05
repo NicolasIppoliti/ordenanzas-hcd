@@ -2,6 +2,7 @@
 // Ordinance-detail spec + design.md D4/D5/D7/D8/D12: one route for every
 // record, type-neutral. getStaticPaths runs over the whole manifest — the
 // route is derived, never a hardcoded count (D7).
+import DocumentText from '../../components/DocumentText.astro';
 import Layout from '../../components/Layout.astro';
 import type { ManifestDocument } from '../../lib/contract';
 import { getDocuments, loadDocumentBody } from '../../lib/data';
@@ -54,7 +55,7 @@ const sizeLabel =
     ? `${pageCount.toLocaleString('es-AR')} páginas`
     : `${(text?.length ?? 0).toLocaleString('es-AR')} caracteres`;
 
-// Task 4a.12a: 11 documents carry more than 50 KB of extracted text (the
+// Task 4a.12a: 9 documents carry more than 50 KB of extracted text (the
 // largest is 207 pages / 708 KB). The full body MUST stay in the DOM so
 // Pagefind indexes it in 4b — truncation is not acceptable. A closed
 // <details> is progressive disclosure that keeps every byte in the markup.
@@ -125,12 +126,12 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
     <section aria-label="Texto del documento">
       <h2>Texto</h2>
       {doc.status === 'no_text' && <p class="muted">Sin texto indexado.</p>}
-      {text !== null && !isLargeText && <div class="doc-text">{text}</div>}
+      {text !== null && !isLargeText && <DocumentText text={text} />}
       {
         text !== null && isLargeText && (
           <details>
             <summary>Ver texto completo ({sizeLabel})</summary>
-            <div class="doc-text">{text}</div>
+            <DocumentText text={text} />
           </details>
         )
       }
@@ -154,23 +155,6 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
 </Layout>
 
 <style>
-  /* The reading surface. Everything here serves one person: someone looking up a
-     regulation on a phone, sometimes across 207 pages. */
-  .doc-text {
-    white-space: pre-wrap;
-    /* The single most effective decision in a reading interface. Past ~75
-       characters the eye loses the line return, and the longest document in this
-       archive is a 207-page tariff schedule. */
-    max-width: var(--measure);
-    font-size: var(--text-base);
-    line-height: var(--leading-prose);
-    /* Extracted PDF text arrives with the source's own line breaks, so it is
-       already ragged. Hyphenation stops long Spanish legal compounds from
-       tearing the right edge open on a narrow screen. */
-    hyphens: auto;
-    overflow-wrap: break-word;
-    margin-top: var(--space-6);
-  }
 
   /* Metadata reads as a reference table, not as prose: label and value on one
      line, labels quiet, values carrying the weight. */
@@ -215,7 +199,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
     gap: var(--space-2);
   }
 
-  /* The nine documents over 50 KB of text. The full body stays in the DOM so
+  /* The nine documents over 50 KB of extracted text. The full body stays in the DOM so
      Pagefind indexes it — collapsing is about not dropping a reader into 207
      pages unannounced, not about shipping fewer bytes. */
   details {

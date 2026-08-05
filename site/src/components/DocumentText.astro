@@ -1,0 +1,94 @@
+---
+// Renders the article structure the SOURCE marked (DESIGN.md, risk 2).
+//
+// 875 of 894 text-bearing documents render article structure. The 19 that do not fall
+// through to the original `pre-wrap` rendering — this project never fabricates
+// structure any more than it fabricates a title.
+//
+// Every character of the source survives; only whitespace changes, which is a PDF
+// extraction artefact rather than something the HCD wrote. A whole-corpus test asserts
+// exactly that over all 894 documents.
+import { parseArticles } from '../lib/articles';
+
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+const parsed = parseArticles(text);
+---
+
+{
+  parsed.hasArticles ? (
+    <div class="doc-body">
+      {parsed.preamble && <p class="doc-preamble">{parsed.preamble}</p>}
+      <dl class="articles">
+        {parsed.articles.map((article) => (
+          <>
+            <dt>{article.label}</dt>
+            <dd>{article.body}</dd>
+          </>
+        ))}
+      </dl>
+    </div>
+  ) : (
+    <div class="doc-text">{text}</div>
+  )
+}
+
+<style>
+  /* This rule MUST live here, not in the page. Astro scopes styles per component: when
+     the element moved into this file and the rule stayed behind, the shipped selector
+     carried the page's hash and the element carried this one, so it matched nothing and
+     the 19 documents without rendered articles lost their line breaks. A source-level test
+     asserts the rule and its element stay in this file — a build-level check would pass
+     vacuously, since the documented gate order runs the tests before the build. */
+  .doc-text {
+    white-space: pre-wrap;
+    max-width: var(--measure);
+    font-size: var(--text-base);
+    line-height: var(--leading-prose);
+    hyphens: auto;
+    overflow-wrap: break-word;
+    margin-top: var(--space-6);
+  }
+
+  /* The article number hangs in its own column, the way legislation.gov.uk sets
+     statute. On a phone the columns stack, because 8.5ch of gutter plus a 68ch
+     measure does not fit at 390px. */
+  .articles {
+    display: grid;
+    grid-template-columns: 8.5ch 1fr;
+    gap: var(--space-4) var(--space-3);
+    margin: var(--space-6) 0 0;
+  }
+  .articles dt {
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    padding-top: 0.15rem;
+  }
+  .articles dd {
+    margin: 0;
+    max-width: var(--measure);
+    line-height: var(--leading-prose);
+  }
+  /* The letterhead every document repeats. Present, because removing it would edit
+     the transcript, but set quietly — it is the same text on all 1,038 pages. */
+  .doc-preamble {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    max-width: var(--measure);
+    margin: var(--space-4) 0 0;
+  }
+  @media (max-width: 34rem) {
+    .articles {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+    .articles dt {
+      margin-top: var(--space-4);
+    }
+  }
+</style>
