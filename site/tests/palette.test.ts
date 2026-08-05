@@ -11,6 +11,8 @@
 // shipped two assertions that were wrong in ways only a replay caught. A ratio
 // that is merely written down is a ratio nobody measured.
 import { readFileSync } from 'node:fs';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import DesignSystemPage from '../src/pages/design-system.astro';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -132,11 +134,18 @@ describe('the figures the design-system page publishes', () => {
     expect(page).toContain('Instrument Sans');
   });
 
-  it('shows the warm paper primitive and the amber family', () => {
+  it('shows the warm paper primitive and the amber family', async () => {
     // `--n-050` IS the paper, and the amber is the only thing the page's own
     // copy promises that it was never showing.
-    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'design-system.astro'), 'utf-8');
-    expect(page).toContain("'050'");
-    expect(page).toContain('const amber');
+    //
+    // Asserted against the RENDERED page, not the source: the reader sees
+    // swatches, not an array literal, and renaming the array is not a defect.
+    const container = await AstroContainer.create();
+    const html = await container.renderToString(DesignSystemPage);
+
+    expect(html).toContain('var(--n-050)');
+    for (const step of [100, 200, 500, 700, 900]) {
+      expect(html, `no swatch for --a-${step}`).toContain(`var(--a-${step})`);
+    }
   });
 });
