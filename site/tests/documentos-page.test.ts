@@ -9,6 +9,10 @@
 // every document appears (no silent omission), nothing is inferred, and the
 // 223 documents whose year the source never stated are visible rather than
 // quietly dropped from a page that claims to hold the whole corpus.
+//
+// The grouping itself is pinned in `browse.test.ts`, against synthetic corpora
+// this page cannot be rendered with — including one where every document
+// carries a year, which is the only way to check the undated group disappears.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
@@ -77,20 +81,6 @@ describe('browse-by-year page', () => {
     const group = page.slice(page.indexOf('id="anio-2021"'));
 
     expect(group.slice(0, group.indexOf('</h2>') + 5)).toContain('108');
-  });
-
-  it('omits the undated group entirely when no document lacks a year', async () => {
-    // The label is shared with the search filter, which shows the bucket only
-    // when a record actually needs it. A group reading "0 documentos" above a
-    // paragraph about documents the HCD left undated would assert something
-    // about records that do not exist.
-    //
-    // Asserted against source: the page reads the manifest itself and takes no
-    // props, so there is no way to render it against a corpus where every
-    // document carries a year. The guard is the only thing that can be pinned.
-    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'documentos.astro'), 'utf-8');
-
-    expect(page).toContain('undated.length > 0');
   });
 
   it('is reachable from the main navigation on every page', async () => {

@@ -10,41 +10,23 @@
 // the right one by scrolling instead of by navigating, and Ctrl+F works over
 // the whole archive with no JavaScript at all.
 //
-// Measured cost of that choice: 185,386 bytes of HTML, 33,098 gzipped. It is by
+// Measured cost of that choice: 185,386 bytes of HTML — 33,029 gzipped, 24,795
+// brotli, both from zlib at its default level, which is what actually goes over
+// the wire. (The `gzip` CLI reports 33,099 for the same bytes because it stores
+// the filename in the header; the wire figure is the one that matters.) It is by
 // far the heaviest page in the archive after the 207-page fiscal ordinance, and
 // it is the price of the whole corpus in one place. No JavaScript, no request
 // after the first.
 import Layout from '../components/Layout.astro';
 import { getDocuments } from '../lib/data';
+import { groupByYear } from '../lib/browse';
 import { formatDocHeading } from '../lib/labels';
 import { getAnioFilterValue } from '../lib/search';
-import type { ManifestDocument } from '../lib/contract';
 
 const documents = getDocuments();
 const total = documents.length.toLocaleString('es-AR');
 
-// D10 forbids inferring a year, so the 223 documents whose source never stated
-// one cannot be filed under a guess. They get their own group, labelled with
-// the same words the search filter uses, and it goes last — not because it
-// matters less, but because it is the only group with no place on a timeline.
-const byYear = new Map<number, ManifestDocument[]>();
-const undated: ManifestDocument[] = [];
-for (const doc of documents) {
-  if (doc.year === null) {
-    undated.push(doc);
-    continue;
-  }
-  const group = byYear.get(doc.year);
-  if (group === undefined) byYear.set(doc.year, [doc]);
-  else group.push(doc);
-}
-
-// Within a year the manifest order is the source's own; sorting by doc_id makes
-// it stable across syncs without asserting anything about precedence.
-const years = [...byYear.keys()].sort((a, b) => b - a);
-for (const list of byYear.values()) list.sort((a, b) => a.doc_id.localeCompare(b.doc_id, 'es'));
-undated.sort((a, b) => a.doc_id.localeCompare(b.doc_id, 'es'));
-
+const { years, undated } = groupByYear(documents);
 const undatedLabel = getAnioFilterValue(null);
 ---
 
@@ -64,18 +46,18 @@ const undatedLabel = getAnioFilterValue(null);
       lists are ignored. */}
   <div class="browse" data-pagefind-ignore>
     <nav aria-label="Índice de años" class="year-index">
-      {years.map((year) => <a href={`#anio-${year}`}>{year}</a>)}
+      {years.map(({ year }) => <a href={`#anio-${year}`}>{year}</a>)}
       {undated.length > 0 && <a href="#anio-sin-determinar">{undatedLabel}</a>}
     </nav>
 
     {
-      years.map((year) => (
+      years.map(({ year, documents: group }) => (
         <section aria-labelledby={`anio-${year}`}>
           <h2 id={`anio-${year}`}>
-            {year} <span class="count">{byYear.get(year)?.length} documentos</span>
+            {year} <span class="count">{group.length} documentos</span>
           </h2>
           <ul>
-            {(byYear.get(year) ?? []).map((doc) => (
+            {group.map((doc) => (
               <li>
                 <a href={`/documento/${doc.doc_id}`}>{formatDocHeading(doc)}</a>
               </li>
