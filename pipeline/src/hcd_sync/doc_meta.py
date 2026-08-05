@@ -124,12 +124,45 @@ def extract_expediente(filename_stem: str, anchor_text: str) -> str | None:
     return match.group(1) if match else None
 
 
+#: The year is the TAIL of an expediente, not the first four-digit run inside it.
+#: `T192024` is file T-19 of 2024; a leftmost `(19|20)\d{2}` search reads `1920` out of
+#: its middle. Thirteen records were filed under a year they do not belong to, and the
+#: mistake was invisible until the built search filter offered 1919, 1920, 2072, 2082
+#: and 2092 as choices.
+_EXPEDIENTE_TAIL_YEAR_RE = re.compile(r"(?:19|20)(\d{2})$")
+_EXPEDIENTE_TAIL_SHORT_YEAR_RE = re.compile(r"(\d{2})$")
+#: GDE puts its year immediately after the prefix instead: `EX-2025-00106406-MUNICRO`.
+_GDE_YEAR_RE = re.compile(r"^(?:EX|IF|ME|NO|PV)-((?:19|20)\d{2})-", re.IGNORECASE)
+#: The HCD has digitised nothing older; a four-digit tail below this is a misread token.
+_EARLIEST_PLAUSIBLE_YEAR = 2000
+
+
 def _year_from_expediente(expediente: str | None) -> int | None:
+    """Read the year an expediente carries, or `None`.
+
+    Order matters: GDE states its year up front, every other family states it last.
+    A bare two-digit tail (`COR03-17`, `D31919`) is expanded into the 2000s — the HCD
+    has published nothing older, and the alternative is inventing a 1917.
+    """
     if not expediente:
         return None
-    match = _YEAR_TOKEN_RE.search(expediente)
-    if match:
-        return int(match.group(0))
+
+    gde = _GDE_YEAR_RE.match(expediente)
+    if gde:
+        return int(gde.group(1))
+
+    tail = _EXPEDIENTE_TAIL_YEAR_RE.search(expediente)
+    if tail and int(tail.group(0)) >= _EARLIEST_PLAUSIBLE_YEAR:
+        return int(tail.group(0))
+
+    # `D31919` is genuinely ambiguous: D-3 of 1919, or D-319 of 19. The four-digit
+    # reading loses because the HCD has published nothing from before 2000 — reading a
+    # 1919 ordinance out of a file number would be inventing a document. This is the one
+    # plausibility bound in the pipeline, and it is stated rather than assumed.
+    short = _EXPEDIENTE_TAIL_SHORT_YEAR_RE.search(expediente)
+    if short:
+        return 2000 + int(short.group(1))
+
     return None
 
 
@@ -143,16 +176,24 @@ def _year_from_header(header_text: str | None) -> int | None:
 
 
 def derive_year(expediente: str | None, header_text: str | None = None) -> int | None:
-    """Derive the ordinance year per D10: expediente, then document header, then absent.
+    """Derive the ordinance year per D10: document header, then expediente, then absent.
 
-    The upload path (`/uploads/YYYY/MM/`) MUST NEVER be used here — see D10.
-    `header_text` is a stub in PR2a (no PDF is ever fetched offline); it is
-    wired to real extracted text in PR3.
+    The header wins because the two sources answer different questions. The expediente
+    year is when the file was OPENED; the `Punta Alta, ... de {yyyy}` line is the date
+    the HCD printed on the ordinance when it SANCTIONED it. Measured over the real
+    corpus, 67 of the 394 records carrying both disagree, always in that direction —
+    ordinance 4393 was filed under expediente O812022 and sanctioned in 2025. Filing it
+    under 2022 hides it from a resident filtering by the year it actually passed.
+
+    D10 originally ordered these the other way round; the corpus showed that was wrong.
+
+    The upload path (`/uploads/YYYY/MM/`) MUST NEVER be used here — see D10. It records
+    when a file was uploaded, which is a third unrelated date.
     """
-    year = _year_from_expediente(expediente)
+    year = _year_from_header(header_text)
     if year is not None:
         return year
-    return _year_from_header(header_text)
+    return _year_from_expediente(expediente)
 
 
 def build_doc_meta(entry: ListingEntry, header_text: str | None = None) -> DocMeta:

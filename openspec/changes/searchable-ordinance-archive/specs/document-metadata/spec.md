@@ -226,10 +226,16 @@ extraction failure, MUST NOT affect `last_run_status`, and MUST NOT be escalated
 
 ### Requirement: Year Derivation
 
-The system MUST derive the ordinance year from the `expediente` year token
-first, from the `Punta Alta, … de {yyyy}` header line transcribed from the
-document second, and MUST mark the year absent third, placing the record in an
+The system MUST derive the ordinance year from the `Punta Alta, … de {yyyy}`
+header line transcribed from the document first, from the `expediente` year
+token second, and MUST mark the year absent third, placing the record in an
 `Año no determinado` filter bucket.
+
+The header wins because the two sources state different facts: the expediente
+year is when the file was opened, the header is the date the HCD printed when it
+sanctioned the ordinance. The year MUST be read from the END of an expediente,
+never from the first four-digit run inside it, and a four-digit tail below 2000
+MUST be re-read as a two-digit year in the 2000s.
 
 The system MUST NOT use the source URL's upload path segment
 (`/wp-content/uploads/YYYY/MM/`) as the ordinance year, as a tiebreak, or as a

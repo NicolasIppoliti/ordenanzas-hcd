@@ -625,7 +625,9 @@ The listing is a WordPress `lsvr_document` post tree, not a flat list.
 
 ### D10 — The upload-path year MUST NOT be used as the ordinance year
 
-Year derivation priority is unchanged: (1) the `expediente` year token, (2) the
+Year derivation priority was REVERSED after measurement — see the D10 note below:
+(1) the `Punta Alta, … de {yyyy}` header, (2) the `expediente` year token, (3) absent.
+The superseded ordering read: (1) the `expediente` year token, (2) the
 `Punta Alta, … de {yyyy}` header transcribed from the document itself, (3) `null` with an
 `Año no determinado` filter bucket.
 
@@ -808,6 +810,32 @@ weekly recomputation of the staleness state even when zero documents change.
   ]
 }
 ```
+
+### D10 correction — the sanction date outranks the expediente year
+
+**Two bugs, found by reading the built search filter rather than the code.** The year
+filter offered `1919`, `1920`, `2072`, `2082` and `2092` as choices — impossible years for
+this corpus.
+
+1. **The year is the TAIL of an expediente, not the first four-digit run inside it.**
+   `T192024` is file T-19 of 2024; a leftmost `(19|20)\d{2}` search reads `1920` out of its
+   middle. A two-digit tail (`COR03-17`, `D31919`) expands into the 2000s. The one
+   plausibility bound in the pipeline lives here: a four-digit tail below 2000 is a misread
+   token, because the HCD has digitised nothing older, and `D31919` is genuinely ambiguous
+   between "D-3 of 1919" and "D-319 of 19".
+
+2. **The header outranks the expediente.** They answer different questions: the expediente
+   year is when the FILE WAS OPENED; the `Punta Alta, … de {yyyy}` line is the date the HCD
+   printed when it SANCTIONED the ordinance. Measured over the corpus, **67 of the 394
+   records carrying both disagree**, always in that direction — ordinance 4393 was filed
+   under expediente `O812022` and sanctioned in 2025. Under the old priority a resident
+   filtering by 2025 did not find it.
+
+Verified after the fix, in a browser against the built index: the year filter spans
+2002–2026 with no implausible value, and `Ordenanza 4393 — Emergencia Ambiental` now
+answers a 2025 filter. 67 records changed year; coverage stayed at 815 of 1,038.
+
+The upload path remains banned as a third, unrelated date.
 
 ### D13 — `expediente` extraction: three measured families, absent by default
 
@@ -1258,7 +1286,8 @@ static build for the site, disable the scheduled workflow for sync — after whi
       — so the body-header year fallback is still required. The captured HTML is committed
       as an offline fixture, so `listing.py` no longer blocks on live access.
 - [x] ~~**`year` derivation for filenames without an expediente year token.**~~
-      **RESOLVED** in **D10**. Priority is (1) expediente, (2) the `Punta Alta, … de {yyyy}`
+      **RESOLVED** in **D10**, then CORRECTED 2026-08-05. Priority is (1) the
+      `Punta Alta, … de {yyyy}` header, (2) expediente
       header line transcribed from the document, (3) `null` + an `Año no determinado`
       filter bucket. The "listing structure if present" step is **removed**: the listing
       carries no sanction year, and its `/uploads/YYYY/` path is upload date — 61% of the

@@ -208,3 +208,54 @@ def test_expediente_whole_corpus_properties() -> None:
             default="",
         )
         assert exp == longest, f"{exp!r} is shorter than {longest!r} in {stem!r}"
+
+
+def test_year_comes_from_the_trailing_year_of_the_expediente() -> None:
+    """The year is the TAIL of a compact expediente, not the first 4-digit run in it.
+
+    Found by reading the built Pagefind year filter, which offered 1919, 1920, 2072,
+    2082 and 2092 — impossible years for this corpus. `T192024` is file T-19 of 2024,
+    but a leftmost `(19|20)\\d{2}` search reads `1920` out of the middle of it. Thirteen
+    records were filed under a year they do not belong to, so a resident filtering by
+    2024 would not find them.
+    """
+    assert derive_year(expediente="T192024", header_text=None) == 2024
+    assert derive_year(expediente="O192019", header_text=None) == 2019
+    assert derive_year(expediente="D1192022", header_text=None) == 2022
+    assert derive_year(expediente="S2072022", header_text=None) == 2022
+    assert derive_year(expediente="S2092021", header_text=None) == 2021
+    # Already correct before the fix — must stay correct.
+    assert derive_year(expediente="O822024", header_text=None) == 2024
+    assert derive_year(expediente="Pres012025", header_text=None) == 2025
+    assert derive_year(expediente="O-02-2026", header_text=None) == 2026
+    assert derive_year(expediente="EX-2025-00106406-MUNICRO-DCSE", header_text=None) == 2025
+
+
+def test_two_digit_expediente_year_is_expanded_not_misread() -> None:
+    """`COR03-17` is file 03 of 2017, and `D31919` is file 319 of 2019.
+
+    A two-digit tail must expand to the 2000s rather than being swallowed by a
+    leftmost four-digit match that invents 1919.
+    """
+    assert derive_year(expediente="COR03-17", header_text=None) == 2017
+    assert derive_year(expediente="D31919", header_text=None) == 2019
+
+
+def test_sanction_year_from_the_header_outranks_the_expediente_year() -> None:
+    """The document's own printed date wins over the year its file was opened.
+
+    Measured over the real corpus: of 394 records carrying both, 67 disagree, always
+    because the expediente was opened in an earlier year than the ordinance was
+    sanctioned. Ordinance 4393 carries expediente O812022 and reads
+    `Punta Alta, ... de 2.025`. Filing it under 2022 means a resident filtering by 2025
+    does not find an ordinance the HCD sanctioned in 2025.
+    """
+    header_2025 = "Punta Alta, 3 de marzo de 2.025\nEL HONORABLE CONCEJO DELIBERANTE"
+    assert derive_year(expediente="O812022", header_text=header_2025) == 2025
+
+    # The expediente still answers when the document prints no date.
+    assert derive_year(expediente="O812022", header_text=None) == 2022
+    assert derive_year(expediente="O812022", header_text="sin fecha impresa") == 2022
+
+    # Neither source: absent, never invented.
+    assert derive_year(expediente=None, header_text=None) is None
