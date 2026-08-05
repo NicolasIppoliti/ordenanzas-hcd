@@ -23,12 +23,12 @@ const yearOptions = buildYearOptions(documents);
   <h1>Buscar en {total} documentos</h1>
 
   <form id="search-form">
-    <p>
-      <label for="q">Buscar</label><br />
+    <div class="field">
+      <label for="q">Buscar</label>
       <input type="search" id="q" name="q" placeholder="Número, expediente, título o texto…" />
-    </p>
-    <p class="filters">
-      <label for="tipo">
+    </div>
+    <div class="filters">
+      <label class="field" for="tipo">
         Tipo de documento
         <select id="tipo" name="tipo">
           <option value="">Todos los tipos</option>
@@ -39,14 +39,14 @@ const yearOptions = buildYearOptions(documents);
           }
         </select>
       </label>
-      <label for="anio">
+      <label class="field" for="anio">
         Año
         <select id="anio" name="anio">
           <option value="">Todos los años</option>
           {yearOptions.map((year) => <option value={year}>{year}</option>)}
         </select>
       </label>
-      <label for="texto">
+      <label class="field" for="texto">
         Texto indexado
         <select id="texto" name="texto">
           <option value="">Todos</option>
@@ -54,7 +54,7 @@ const yearOptions = buildYearOptions(documents);
           <option value="Sin texto indexado">Sin texto indexado</option>
         </select>
       </label>
-    </p>
+    </div>
     <button type="submit">Buscar</button>
   </form>
 
@@ -181,18 +181,109 @@ const yearOptions = buildYearOptions(documents);
 </Layout>
 
 <style>
-  .filters {
+  /* This is the only page where a visitor does something rather than reads, and
+     it is the one most likely to be used one-handed on a phone. Every control
+     clears the 48px web-mobile touch minimum. */
+  form {
+    margin-block: var(--space-6);
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--measure);
   }
-  .search-result {
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  /* Label above the field, never a placeholder standing in for one — the
+     placeholder disappears the moment someone starts typing, taking the only
+     description of the field with it. */
+  label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+  input[type='search'],
+  select {
+    font: inherit;
+    font-size: var(--text-base);
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    min-height: 3rem;
+    width: 100%;
+  }
+  input[type='search']::placeholder {
+    color: var(--text-muted);
+  }
+  input[type='search']:focus-visible,
+  select:focus-visible {
+    border-color: var(--focus);
+  }
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+  }
+  button[type='submit'] {
+    font: inherit;
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    color: var(--bg);
+    background: var(--link);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    min-height: 3rem;
+    cursor: pointer;
+    align-self: start;
+    transition: background var(--duration-micro) var(--ease-out);
+  }
+  button[type='submit']:hover {
+    background: var(--link-hover);
+  }
+  button[type='submit']:active {
+    background: var(--link-hover);
+    transform: translateY(1px);
+  }
+  button[type='submit']:disabled {
+    background: var(--n-500);
+    cursor: not-allowed;
+  }
+
+  /* Results are injected at runtime by the Pagefind client, so they never carry
+     Astro's scope attribute — these rules have to be global or they silently do
+     nothing. */
+  :global(.search-result) {
     border-bottom: 1px solid var(--border);
-    padding: 0.75rem 0;
+    padding-block: var(--space-4);
   }
-  .search-result-meta {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin: 0.25rem 0;
+  :global(.search-result a) {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-medium);
+  }
+  :global(.search-result-meta),
+  :global(.search-result .excerpt) {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    margin: var(--space-1) 0;
+  }
+  :global(.search-result .excerpt) {
+    color: var(--text);
+    line-height: var(--leading-normal);
+  }
+  /* Pagefind marks matches with <mark>, whose browser default is a saturated
+     yellow — the one colour here that would read as an editorial highlight on a
+     legal document. The match is carried by weight and an underline instead,
+     which also survives dark mode and does not depend on colour alone. */
+  :global(.search-result mark) {
+    background: transparent;
+    color: inherit;
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 </style>

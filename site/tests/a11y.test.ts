@@ -6,6 +6,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
 import IndexPage from '../src/pages/index.astro';
 import DetailPage from '../src/pages/documento/[doc_id].astro';
+import DesignSystemPage from '../src/pages/design-system.astro';
 import type { ManifestDocument } from '../src/lib/contract';
 
 function baseDoc(overrides: Partial<ManifestDocument> & { doc_id: string }): ManifestDocument {
@@ -58,6 +59,16 @@ describe('accessibility (axe-core)', () => {
   it('index page has no WCAG 2.1 AA violations', async () => {
     const container = await AstroContainer.create();
     const html = await container.renderToString(IndexPage);
+    const violations = await auditHtml(html);
+    expect(violations, JSON.stringify(violations, null, 2)).toHaveLength(0);
+  });
+
+  it('design-system page has no WCAG 2.1 AA violations', async () => {
+    // The system's own reference page is held to the same bar as the archive.
+    // A swatch grid and a disabled button are exactly where contrast and name
+    // violations hide, and this page is the one place they all appear at once.
+    const container = await AstroContainer.create();
+    const html = await container.renderToString(DesignSystemPage);
     const violations = await auditHtml(html);
     expect(violations, JSON.stringify(violations, null, 2)).toHaveLength(0);
   });

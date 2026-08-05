@@ -1,0 +1,160 @@
+/* Design tokens for the HCD ordinance archive.
+ *
+ * Three layers, and components may only ever read the third:
+ *
+ *   primitive   --n-700, --b-600        raw values, named by what they are
+ *   semantic    --text-muted, --link    named by role, so a change is one edit
+ *   component   --notice-bg             only where a role is too generic to reuse
+ *
+ * Two constraints shape everything here, and both come from the product rather
+ * than from taste:
+ *
+ * 1. System fonts only, no webfonts, no images. This is a public utility whose
+ *    running cost may not scale with traffic, and whose readers are mostly on
+ *    phones on municipal-town connections. A font file is the single easiest way
+ *    to break both of those at once.
+ * 2. This is a READING interface for legal text, not an application. The scale
+ *    below is calibrated for someone reading a 207-page fiscal ordinance on a
+ *    phone, which is why the body size is larger and the measure tighter than a
+ *    dashboard would use.
+ *
+ * Every contrast pair in both themes was measured, not estimated. The lowest is
+ * 5.84:1 (muted text on white) against a 4.5:1 requirement.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Primitive: neutral -------------------------------------------------
+   * Slightly cool. A warm gray reads editorial and friendly; this archive is
+   * neither. It reproduces municipal legal documents and should look like it. */
+  --n-100: #f6f7f9;
+  --n-200: #e8eaee;
+  --n-300: #d3d8de;
+  --n-400: #aab3bd;
+  --n-500: #7d8894;
+  --n-600: #5b6673;
+  --n-700: #414b57;
+  --n-800: #2a323b;
+  --n-900: #161b21;
+
+  /* ---- Primitive: ink blue ------------------------------------------------
+   * The one accent. Deep institutional blue reads "official document" without
+   * reading as any political bloc — which rules out celeste, red, violet and
+   * yellow for this corpus. Strict neutrality is a product requirement here,
+   * so it constrains the palette exactly as much as legibility does. */
+  --b-100: #e8f0f9;
+  --b-200: #c7dcf1;
+  --b-300: #8fbae3;
+  --b-400: #4d8ccb;
+  --b-500: #1f6bb5;
+  --b-600: #0a4f8f;
+  --b-700: #083f72;
+  --b-800: #06304f;
+  --b-900: #04202f;
+
+  /* ---- Primitive: amber ---------------------------------------------------
+   * Used for exactly one thing: the archive-is-out-of-date notice. A third
+   * family earns its place only because that notice must not look like an
+   * ordinary link or an ordinary paragraph. */
+  --a-100: #fdf4e3;
+  --a-200: #f7e3b8;
+  --a-500: #a06a00;
+  --a-700: #6b4600;
+  --a-900: #3a2c05;
+
+  /* ---- Semantic: light ---------------------------------------------------- */
+  --bg: #ffffff;
+  --bg-surface: var(--n-100);
+  --text: var(--n-900);
+  --text-muted: var(--n-600);
+  --border: var(--n-300);
+  --border-strong: var(--n-400);
+  --link: var(--b-600);
+  --link-hover: var(--b-700);
+  --focus: var(--b-600);
+  --notice-bg: var(--a-100);
+  --notice-border: var(--a-500);
+  --notice-text: var(--a-700);
+
+  /* ---- Type ---------------------------------------------------------------
+   * System stack. `ui-sans-serif` first so each OS uses the face it renders
+   * best; no webfont is downloaded, ever.
+   *
+   * Body is 17px, not the 15px a dashboard would use. That number is calibrated
+   * for reading continuous legal prose on a phone — the longest document here is
+   * 207 pages — and 15px turns that into work. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 0.8125rem;   /* 13px  labels, metadata keys */
+  --text-sm: 0.9375rem;   /* 15px  secondary, captions */
+  --text-base: 1.0625rem; /* 17px  body and document text */
+  --text-lg: 1.25rem;     /* 20px  lead, card titles */
+  --text-xl: 1.5rem;      /* 24px  section titles */
+  --text-2xl: 1.875rem;   /* 30px  page title */
+
+  --leading-tight: 1.25;  /* headings */
+  --leading-normal: 1.5;  /* UI text */
+  --leading-prose: 1.65;  /* document body — long-form needs the air */
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  /* Measure: the single most effective typographic decision in a reading
+   * interface. Beyond ~75 characters the eye loses the line return. */
+  --measure: 68ch;
+
+  /* ---- Spacing: base 4 ---------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --page-max: 60rem;
+
+  /* ---- Radii --------------------------------------------------------------
+   * Two steps, and no elevation scale at all. This product has no overlays,
+   * no modals and no floating panels — nothing is ever above anything else.
+   * Shipping a shadow scale nobody consumes is how a system starts to rot. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* ---- Motion -------------------------------------------------------------
+   * Almost nothing moves: there is no JavaScript to move it. These cover focus
+   * and hover only. 100ms because a colour change over a few pixels reads as
+   * instant below ~200ms and sluggish above it. */
+  --duration-micro: 100ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- Semantic: dark -------------------------------------------------------
+ * Follows the reader's OS. There is no toggle, because a toggle needs
+ * JavaScript and this site ships none beyond a 268-byte staleness script.
+ *
+ * The dark background is #12161b, not pure black: pure black against light text
+ * maximises halation, which is exactly wrong for someone reading a long
+ * document at night. Every pair here was measured too; the lowest is 8.55:1. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161b;
+    --bg-surface: #1a1f26;
+    --text: var(--n-100);
+    --text-muted: var(--n-400);
+    --border: #2c343d;
+    --border-strong: var(--n-600);
+    --link: var(--b-300);
+    --link-hover: var(--b-200);
+    --focus: var(--b-300);
+    --notice-bg: var(--a-900);
+    --notice-border: var(--a-500);
+    --notice-text: var(--a-200);
+  }
+}

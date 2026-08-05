@@ -5,7 +5,7 @@
 // never removed, no colour-only signalling, system font stack, 0 KB JS
 // except the staleness script pulled in via Provenance.
 import Footer from './Footer.astro';
-import Provenance from './Provenance.astro';
+import StalenessNotice from './StalenessNotice.astro';
 import { loadSyncStatus } from '../lib/data';
 
 interface Props {
@@ -25,87 +25,139 @@ const syncStatus = loadSyncStatus();
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    <style>
-      :root {
-        color-scheme: light;
-        --fg: #1a1a1a;
-        --bg: #ffffff;
-        --muted: #55606b;
-        --link: #0a4f8f;
-        --border: #d0d5da;
-      }
+    <style is:global>
+      @import '../styles/tokens.css';
+
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        font-family:
-          system-ui,
-          -apple-system,
-          'Segoe UI',
-          Roboto,
-          Helvetica,
-          Arial,
-          sans-serif;
-        color: var(--fg);
+        font-family: var(--font-sans);
+        font-size: var(--text-base);
+        line-height: var(--leading-normal);
+        color: var(--text);
         background: var(--bg);
-        line-height: 1.5;
+        /* Legal Spanish is full of long words; hyphenation keeps the ragged
+           edge from tearing open on a narrow phone. */
+        -webkit-text-size-adjust: 100%;
       }
       a {
         color: var(--link);
+        text-underline-offset: 0.15em;
+        transition: color var(--duration-micro) var(--ease-out);
+      }
+      a:hover {
+        color: var(--link-hover);
       }
       .skip-link {
         position: absolute;
         left: -9999px;
         top: 0;
         background: var(--bg);
-        color: var(--fg);
-        padding: 0.5rem 1rem;
+        color: var(--text);
+        padding: var(--space-2) var(--space-4);
         z-index: 10;
-        border: 2px solid var(--link);
+        border: 2px solid var(--focus);
+        border-radius: var(--radius-sm);
       }
       .skip-link:focus {
-        left: 0.5rem;
-        top: 0.5rem;
+        left: var(--space-2);
+        top: var(--space-2);
       }
       :focus-visible {
-        outline: 3px solid var(--link);
+        outline: 3px solid var(--focus);
         outline-offset: 2px;
+        border-radius: var(--radius-sm);
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: var(--leading-tight);
+        /* Headings here are document titles, and a document title can run to a
+           full sentence. Balancing the wrap keeps a lone orphan word off the
+           last line without any measurement. */
+        text-wrap: balance;
+      }
+      h1 {
+        font-size: var(--text-2xl);
+        margin: 0 0 var(--space-3);
+      }
+      h2 {
+        font-size: var(--text-xl);
       }
       header,
       main,
       footer {
-        max-width: 60rem;
+        max-width: var(--page-max);
         margin: 0 auto;
-        padding: 1rem 1.25rem;
+        padding: var(--space-4);
       }
       header {
         border-bottom: 1px solid var(--border);
+        padding-block: var(--space-2);
       }
-      nav a {
-        margin-right: 1rem;
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-6);
+        align-items: baseline;
+        justify-content: space-between;
+        width: 100%;
+        font-size: var(--text-sm);
+      }
+      .site-name {
+        font-weight: var(--weight-bold);
+      }
+      /* Touch targets: 48px is the web-mobile minimum, and these are the only
+         navigation links on the site. The padding does the work; the text
+         itself stays inline so the header does not turn into a button bar. */
+      nav a,
+      footer a {
+        display: inline-block;
+        padding-block: var(--space-2);
+        min-height: 2.75rem;
+        line-height: 1.6;
       }
       footer {
         border-top: 1px solid var(--border);
-        color: var(--muted);
-        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-size: var(--text-sm);
+        margin-top: var(--space-12);
       }
       .provenance {
-        font-size: 0.9rem;
-        color: var(--muted);
+        font-size: var(--text-sm);
+        color: var(--text-muted);
       }
       .disclaimer {
-        font-size: 0.85rem;
+        font-size: var(--text-sm);
+      }
+      /* The staleness notice carries a second, non-colour signal: it is the only
+         element on the site with a left rule. ~8% of readers will not see the
+         amber at all. */
+      #staleness-notice[hidden] {
+        display: none;
       }
       #staleness-notice {
-        color: #6b3d00;
-        border: 1px solid #d99a2b;
-        background: #fff6e5;
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.25rem;
+        margin-top: var(--space-4);
+        color: var(--notice-text);
+        background: var(--notice-bg);
+        border: 1px solid var(--notice-border);
+        border-left-width: 4px;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
       }
       .muted {
-        color: var(--muted);
+        color: var(--text-muted);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>
@@ -113,14 +165,17 @@ const syncStatus = loadSyncStatus();
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
     <header>
       <nav aria-label="Principal" data-pagefind-ignore>
-        <a href="/">Archivo de Ordenanzas del HCD</a>
-        <a href="/acerca">Acerca de este archivo</a>
+        <a href="/" class="site-name">Ordenanzas del HCD</a>
+        <a href="/acerca">Acerca</a>
       </nav>
-      <Provenance syncStatus={syncStatus} />
     </header>
     <main id="main-content">
+      <StalenessNotice
+        lastSuccessAt={syncStatus.last_success_at}
+        thresholdDays={syncStatus.staleness_threshold_days}
+      />
       <slot />
     </main>
-    <Footer />
+    <Footer syncStatus={syncStatus} />
   </body>
 </html>
