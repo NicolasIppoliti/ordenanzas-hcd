@@ -1,0 +1,76 @@
+# Gentleman Guardian Angel Configuration
+# https://github.com/your-org/gga
+
+# AI Provider (required)
+# Options: claude, gemini, codex, opencode, cursor[:model], kilo[:model], kiro, ollama:<model>, lmstudio[:model], github:<model>, minimax[:model]
+# Examples:
+#   PROVIDER="claude"
+#   PROVIDER="gemini"
+#   PROVIDER="codex"
+#   PROVIDER="opencode"
+#   PROVIDER="opencode:anthropic/claude-opus-4-5"
+#   PROVIDER="cursor"
+#   PROVIDER="cursor:composer-2"
+#   PROVIDER="kilo"
+#   PROVIDER="kilo:anthropic/claude-sonnet-4-5"
+#   PROVIDER="kiro"
+#   PROVIDER="ollama:llama3.2"
+#   PROVIDER="ollama:codellama"
+#   PROVIDER="lmstudio"
+#   PROVIDER="lmstudio:qwen2.5-coder-7b-instruct"
+#   PROVIDER="github:gpt-4o"
+#   PROVIDER="github:deepseek-r1"
+#   PROVIDER="minimax"
+#   PROVIDER="minimax:MiniMax-M3"
+PROVIDER="claude"
+
+# File patterns to include in review (comma-separated)
+# Default: * (all files)
+# Examples:
+#   FILE_PATTERNS="*.ts,*.tsx"
+#   FILE_PATTERNS="*.py"
+#   FILE_PATTERNS="*.go,*.mod"
+# This repo is two languages: a Python ingestion pipeline and an Astro/TS site.
+# The default TS-only pattern would have skipped the entire pipeline, including the
+# path-safety validator, the politeness policy and the robots.txt HALT.
+FILE_PATTERNS="*.py,*.ts,*.tsx,*.astro,*.mjs,*.yml,*.yaml"
+
+# File patterns to exclude from review (comma-separated)
+# Default: none
+# Examples:
+#   EXCLUDE_PATTERNS="*.test.ts,*.spec.ts"
+#   EXCLUDE_PATTERNS="*_test.go,*.mock.ts"
+# `data/**` is pipeline OUTPUT — 1,038 generated JSON documents, rewritten by every
+# weekly sync. Reviewing generated data costs time and money and finds nothing.
+# The listing fixture is a 1.18 MB verbatim capture of the source page: it is evidence,
+# not authored code, and must never be "improved" by a reviewer.
+# Test files are NOT excluded. `strict_tdd` is on, so the tests are this project's
+# specification — they encode the measured corpus facts (1,038 records, four suffixed ids,
+# the D5 hard negatives) and a wrong assertion is as damaging as wrong code. Reviewing them
+# is the point, not overhead. `*.d.ts` stays out: it is scaffold, not authored logic.
+EXCLUDE_PATTERNS="data/**,pipeline/tests/fixtures/*.html,*.d.ts"
+
+# File containing code review rules
+# Default: AGENTS.md
+RULES_FILE="AGENTS.md"
+
+# Strict mode: fail if AI response is ambiguous
+# Default: true
+STRICT_MODE="true"
+
+# Timeout in seconds for AI provider response
+# Default: 300 (5 minutes)
+# Increase for large changesets or slow connections
+TIMEOUT="600"
+
+# OpenCode provider: optional reasoning effort / variant
+# Examples: minimal, low, medium, high, max
+# OPENCODE_VARIANT="high"
+
+# OpenCode provider: optional agent profile
+# Keep this lightweight. Agent prompts can add significant token overhead.
+# OPENCODE_AGENT="gga-reviewer"
+
+# Base branch for --pr-mode (auto-detects main/master/develop if empty)
+# Default: auto-detect
+# PR_BASE_BRANCH="main"

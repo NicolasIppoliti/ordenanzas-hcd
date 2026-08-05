@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  Product: searchable public archive of ~1,038 Coronel Rosales municipal
+  ordinance PDFs (hcdrosales.gob.ar), unofficial, zero-variable-cost.
+  Stack: static site + pre-built search index, no backend, no database,
+  no user accounts. Toolchain NOT YET CHOSEN (greenfield, empty repo).
+  Sync: incremental scraping/ingestion pipeline (politeness policy,
+  local cache, bounded retries), runs outside the request path.
+  Style: strict neutrality, no editorial content, WCAG 2.1 AA.
+  Conventions: code/commits/docs in English, user-facing copy in Spanish.
+
+strict_tdd: true # test runner landed in Phase 1 (Scaffolding); strict from Phase 2 onward
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Flag any deviation from the zero-variable-cost / no-backend constraint
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Metadata extraction and search behavior must state graceful degradation
+      for the 14% number-only filenames and the 16% non-text-extractable PDFs
+  design:
+    - Include sequence diagrams for complex flows (sync pipeline especially)
+    - Document architecture decisions with rationale
+    - Justify any dependency on a paid/variable-cost service before proposing it
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing code patterns once a toolchain is chosen
+      - Never introduce a database or server runtime without an explicit,
+        documented requirement (see BRIEF.md hard constraints)
+    tdd: true
+    test_command: "uv run --directory pipeline pytest -q && pnpm --dir site run test"
+  verify:
+    test_command: "uv run --directory pipeline pytest -q && pnpm --dir site run test"
+    build_command: "uv run --directory pipeline ruff check src tests && uv run --directory pipeline mypy src && pnpm --dir site run check && pnpm --dir site run build"
+    coverage_threshold: 80 # measured on pipeline/src/hcd_sync only
+  archive:
+    - Warn before merging destructive deltas

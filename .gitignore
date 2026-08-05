@@ -1,0 +1,27 @@
+# Pipeline scratch: fetched PDFs, per-run only, never committed
+archive/
+
+# Astro build output
+dist/
+
+# Python virtualenv (uv-managed)
+.venv/
+
+# Node dependencies
+node_modules/
+
+# Astro generated types
+.astro/
+
+# Tool caches — regenerated on every run, never reviewed
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Lockfiles ARE committed on purpose: reproducible installs in CI.
+# They are generated, so exclude them from review-size accounting rather
+# than from version control.
+# Local Pi runtime state
+.atl/
