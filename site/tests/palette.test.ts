@@ -11,10 +11,10 @@
 // shipped two assertions that were wrong in ways only a replay caught. A ratio
 // that is merely written down is a ratio nobody measured.
 import { readFileSync } from 'node:fs';
-import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import DesignSystemPage from '../src/pages/design-system.astro';
 import { join } from 'node:path';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
+import DesignSystemPage from '../src/pages/design-system.astro';
 
 const css = readFileSync(join(process.cwd(), 'src', 'styles', 'tokens.css'), 'utf-8');
 
