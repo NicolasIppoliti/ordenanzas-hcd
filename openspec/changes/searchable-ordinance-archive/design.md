@@ -140,18 +140,27 @@ No corpus measurement exists and none is invented here. The estimate, with arith
 - Growth: 1,038 docs over ~15 years ≈ 69/year ≈ **1.3/week** ≈ 8 KB/week ≈ **~400 KB/year**
   raw, well under 150 KB/year packed.
 
-**MEASURED 2026-08-05, decision locked: commit to git.** A real limited sync archived 50
-documents; the corrected one-liner reported `n 50 · n_text 48 · no_text 2 · mean_bytes 4154 ·
-p95 10326 · max 45543 · projected_total_MB 3.61`. That is **14x under** the 50 MB threshold,
-so the commit-to-git default holds with enormous margin and the escape hatch stays unbuilt.
+**MEASURED TWICE. Decision locked: commit to git.**
 
-Caveat on the sample, stated rather than hidden: `--limit 50` takes listing order, and the
-listing is reverse-chronological, so this is the **50 newest** documents, not a random draw.
-It shows: 2 of 50 lack a text layer (4%) against 16% corpus-wide, because the non-extractable
-subset is concentrated in the 2021 bulk historical upload. The mean is therefore drawn from
-newer documents. It does not change the decision — the projection would have to be wrong by
-more than an order of magnitude to leave the commit band — but re-run the measurement over
-the full archive during task 3.5 and record the real number.
+A first pass over a 50-document limited sync projected 3.61 MB. The full 1,038-document
+import then produced the real figure: **894 text bodies totalling 7.57 MB**, mean 8,465 B,
+p95 13,051 B, max 708,254 B. The projection was **2.1x low**, exactly because `--limit 50`
+takes listing order and the listing is reverse-chronological, so it sampled the 50 newest
+documents. Recorded here rather than quietly replaced: a sampling bias that survives into a
+decision is worth naming, and this one would have been invisible if the full import had not
+been measured again.
+
+The decision is unchanged and unthreatened — 7.57 MB is still **6.6x under** the 50 MB
+threshold, and git packs prose several times over. Corpus growth is ~1.3 documents a week.
+
+**The outliers are the fiscal ordinances, and they matter for the page budget.** Eleven
+documents (1% of the corpus) carry more than 50 KB of text; the largest,
+`4270-D-138-2023-Fiscal-e-Impositiva-2024`, is **207 pages and 708 KB**. The other four in
+the top five are the same document from other years. That single page would ship ~180 KB
+gzipped, more than the Next.js baseline D1 rejected. Truncation is not an option — the full
+body is what `data-pagefind-body` indexes, and a resident looking up a tariff needs the
+tariff. Slice 4a decides how those eleven pages are rendered so the other 1,027 do not pay
+for them.
 
 **Decision rule (thresholds):**
 

@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ordenanzas.fragua.dev/schemas/manifest.schema.json",
+  "title": "data/manifest.json",
+  "description": "See design.md 'Interfaces / Contracts'. Mirrored by site/src/lib/contract.ts's assertManifest -- both sides must agree or CI fails.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "source_host", "documents"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string" },
+    "source_host": { "type": "string" },
+    "documents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/document" }
+    }
+  },
+  "$defs": {
+    "crossReference": {
+      "type": "object",
+      "required": ["number", "signal", "excerpt"],
+      "additionalProperties": false,
+      "properties": {
+        "number": { "type": "integer" },
+        "signal": { "enum": ["title", "body"] },
+        "excerpt": { "type": "string" }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "doc_id",
+        "number",
+        "number_variants",
+        "doc_type",
+        "expediente",
+        "year",
+        "title",
+        "title_source",
+        "anchor_text",
+        "source_url",
+        "source_filename",
+        "sha256",
+        "bytes",
+        "fetched_at",
+        "status",
+        "text_path",
+        "cross_references",
+        "notes",
+        "last_error",
+        "last_error_at"
+      ],
+      "properties": {
+        "doc_id": { "type": "string", "minLength": 1 },
+        "number": { "type": ["integer", "null"] },
+        "number_variants": { "type": "array", "items": { "type": "string" } },
+        "doc_type": {
+          "enum": [
+            "ordenanza",
+            "convenio",
+            "resolucion",
+            "decreto",
+            "anexo",
+            "preparatoria",
+            "sin clasificar"
+          ]
+        },
+        "expediente": { "type": ["string", "null"] },
+        "year": { "type": ["integer", "null"] },
+        "title": { "type": ["string", "null"] },
+        "title_source": { "enum": ["listing", "filename", "none"] },
+        "anchor_text": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_filename": { "type": "string" },
+        "sha256": { "type": ["string", "null"] },
+        "bytes": { "type": ["integer", "null"] },
+        "fetched_at": { "type": ["string", "null"] },
+        "status": { "enum": ["pending", "ok", "no_text", "error"] },
+        "text_path": { "type": ["string", "null"] },
+        "cross_references": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/crossReference" }
+        },
+        "notes": { "type": "string" },
+        "last_error": { "type": ["string", "null"] },
+        "last_error_at": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

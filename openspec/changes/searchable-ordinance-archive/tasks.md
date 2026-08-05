@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Estimated changed lines | 3,000–3,750 |
-| 800-line budget risk | High |
+| Review budget | 800 lines, raised to 1,200 when a split would be artificial |
 | Chained PRs recommended | Yes |
 | Delivery strategy | ask-on-risk |
 | Chain strategy | `feature-branch-chain` — confirmed by the product owner |
@@ -13,7 +13,11 @@
 Decision needed before apply: RESOLVED — the owner chose the feature-branch chain
 Chained PRs recommended: Yes
 Chain strategy: feature-branch-chain
-800-line budget risk: High — mitigated by the 8-slice chain; no single PR exceeds ~500 lines
+Review budget: 800 lines nominal, **1,200 when a smaller split would be artificial**
+(owner decision, 2026-08-05). The ceiling exists to keep review real, not to force a
+seam through code that belongs together — `slice/2b-ii-archive` at 836 is the case that
+prompted it, where the only remaining cut would have separated the archive writer from
+the loop that calls it.
 
 ### Slices (Feature Branch Chain: PR1→tracker, PR2a→PR1, PR2b→PR2a, PR3..5→prior branch)
 
@@ -46,6 +50,35 @@ observable, so a reviewer would have to accept it on faith. Splitting at the net
 boundary gives PR2a a real, inspectable artifact — a manifest built from the committed
 fixture, with no network code exercised at all — and lets PR2b introduce the risky
 fetching code against an identity model that is already settled and verified.
+
+### Delivered branch chain (measured, 2026-08-05)
+
+Built retroactively from an uncommitted tree, so `cli.py` — which grew across three
+slices and had no intermediate versions — was reconstructed at two earlier boundaries
+rather than simply distributed. Sizes exclude lockfiles and the captured listing fixture.
+
+| Branch | Lines | Contents |
+|---|---|---|
+| `main` | — | brief, specs, design, tasks, review rules |
+| `slice/1-scaffolding` | 170 | toolchain + network guard |
+| `slice/2a-i-listing-identity` | 509 | listing parser, `doc_id`, path safety |
+| `slice/2a-ii-metadata` | 427 | title, type, year, expediente |
+| `slice/2a-iii-writers` | 508 | manifest, sync status, aliases, offline CLI |
+| `slice/2b-i-politeness` | 355 | host policy, delay, retries, `robots.txt` HALT |
+| `slice/2b-ii-archive` | 836 | archive, checksums, drift, incremental loop |
+| `slice/3-i-extraction` | 171 | PyMuPDF text, `no_text` |
+| `slice/3-ii-crossrefs` | 330 | reference detection, manifest gating |
+| `slice/3-iii-wiring` | 711 | extraction + header year + crossrefs wired in |
+| `slice/3-iv-contract` | 671 | JSON Schema + TypeScript mirror |
+
+Every PR is within budget. `2b-ii` at 836 sits above the 800 nominal line but inside the
+1,200 ceiling the owner set for exactly this case: the only remaining cut would have
+separated the archive writer from the loop that calls it.
+
+The first attempt produced only six branches, with PR2b at 1,191 lines and PR3 at 1,883 —
+2.4x the budget. The forecast in the table above had said ~400 and ~450. That is the third
+time in this change the estimates ran low by roughly 3x, and the reason the sizes here are
+labelled measured rather than estimated.
 
 ### Suggested Work Units
 
@@ -168,6 +201,7 @@ in this PR opens a socket.
 - [ ] 4a.10 TEST: an alias whose target is absent from the manifest **fails `astro build`** with a message naming the alias and its missing target; assert no page is emitted and the miss is not skipped silently
 - [ ] 4a.11 TEST: `axe-core`+`happy-dom` on index/detail-with-title/detail-null-title/detail-convenio
 - [ ] 4a.12 Verify `astro build` emits one page per manifest record (1,038) plus one page per alias, 0 JS beyond staleness script, ≤20KB chrome/page, whole-page p95 ≤50KB with the observed max recorded
+- [ ] 4a.12a Decide and implement how the 11 documents over 50 KB of text render (largest: 207 pages, 708 KB, the 2024 fiscal ordinance). The full body MUST stay in the DOM so Pagefind indexes it; progressive disclosure that keeps it there is acceptable, truncation is not. Verify the other 1,027 pages are unaffected
 - [ ] 4a.13 Enable `@astrojs/sitemap` in `site/astro.config.mjs` (`integrations: [sitemap()]`); deferred from slice 1 because it crashes on a zero-route build. Verify `dist/sitemap-index.xml` is emitted
 
 ## Phase 4b: Search (PR4b)
