@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "last_run_at": "2026-08-05T06:09:17Z",
+  "last_run_status": "ok",
+  "last_success_at": "2026-08-05T06:09:17Z",
+  "documents_total": 1038,
+  "documents_added_last_run": 0,
+  "staleness_threshold_days": 30,
+  "halt_reason": null
+}
