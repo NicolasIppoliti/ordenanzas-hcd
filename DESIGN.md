@@ -121,6 +121,36 @@ WCAG 1.4.11's 3:1. It is now 3.59:1 and 4.76:1.
 - **No elevation scale.** This product has no overlays, no modals, nothing floating.
   Shipping shadow tokens no component consumes is how a system starts to rot.
 
+## Composition and voice
+
+The first five gap items changed type, colour and features. They never touched composition,
+and the result read as unfinished with every token correct — new skin on the same austere
+structure. This section exists so that gap cannot reopen.
+
+**The home answers two questions, in this order.** "What can I do here", then "what is in
+here". One search entry above the fold — the header band, and nothing competing with it. Then
+the year strip, which is the only place on the site that says how much there is and from when.
+Then the most recent documents. A second link to a destination the nav already reaches is a
+defect, not a convenience.
+
+**Lists are columns, not bullets.** Every document row hangs its number in a tabular column
+and sets the title in the serif, the same treatment the article renderer gives article
+numbers. It is what lets a reader scan 4449 against 4454 without reading either line. No body
+excerpt: every extracted document opens with the same municipal letterhead, so an excerpt is
+thirty identical words.
+
+**Every class a page uses must be defined in the component that uses it.** Astro scopes styles
+per component; a rule and its element in different files ship a selector that matches nothing.
+This project has shipped that defect twice — once silently removing `pre-wrap` from 19
+documents, once leaving the home page's document list with the browser's default bullets.
+
+**Voice: speak to a resident, never about the source.** Voseo, imperative, the reader's problem
+first. Every number on screen comes from the manifest. What is forbidden is not informality —
+it is a villain. "Dejá de pelearte con PDFs sueltos" reads better precisely because it has an
+enemy, and the only enemy available is the body that publishes those PDFs: the HCD is the
+client Fragua wants, and this archive is unofficial and survives because they tolerate it. No
+speed promises, no superlatives, no ranking, nothing that interprets a document's content.
+
 ## Motion
 
 - **Approach:** minimal-functional. There is no JavaScript to animate anything.
@@ -181,6 +211,8 @@ carries a `<noscript>` saying so and pointing at the browse page, which needs no
 | 2026-08-05 | Initial design system | Created by /design-consultation after visual research of legislation.gov.uk and argentina.gob.ar, against a live site the owner judged unfinished, poorly ordered, cheap-looking, and unclear on the home page |
 | 2026-08-05 | Webfonts allowed | The no-webfont rule was inferred from "mobile payload", not stated in BRIEF.md. Two subset variable families cost ~45 KB cached once, on unmetered bandwidth. It was over-strict, and it was the main reason the site read as unfinished |
 | 2026-08-05 | Warm paper over white | Distinguishes a document archive from a dashboard, and serves civic warmth without any politically-coded colour |
+| 2026-08-05 | Composition and voice written down | Five gap items shipped tokens and features and left the structure of 2010 underneath; the owner read the result as not intuitive and not modern, and he was right |
+| 2026-08-05 | Warm and direct, never a villain | The full marketing register got its energy from an enemy, and the only enemy available was the HCD — the client, and the body whose tolerance this unofficial archive depends on |
 | 2026-08-05 | Contrast asserted by computation, not by table | The written floors (5.84 / 8.55) were both wrong once the palette changed, and the form-control boundary had never cleared 3:1 at all |
 | 2026-08-05 | Fraunces pinned to weight 600 | The variable range cost 15 KB more than the whole Instrument Sans file, for weights no heading uses. Measured, not estimated |
 | 2026-08-05 | Ranked the four goals instead of blending them | "A bit of all four" was the owner's instinct; blended, they conflict above the fold. Ranked, all four survive and collisions have an answer |

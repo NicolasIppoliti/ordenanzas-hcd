@@ -51,8 +51,9 @@ marker-first type priority misclassified 67 ordinances. Every one passed reading
 data. The whole-corpus tests exist for this — a new validation rule without one is a
 blocking finding.
 
-**`doc_id` is the identity; `number` is a nullable attribute.** 984 numbered files carry
-only 942 distinct numbers, and 52 documents carry no number at all. Any code keying on
+**`doc_id` is the identity; `number` is a nullable attribute.** Measured against the
+shipped manifest: 987 numbered records carry only 943 distinct numbers, and 51 records
+carry no number at all. Any code keying on
 `number` for identity, uniqueness, or a filesystem path is a bug.
 
 **Path safety is reject-only.** `doc_id` is a remote-controlled string that becomes a

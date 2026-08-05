@@ -65,15 +65,6 @@ export function loadSyncStatus(filePath: string = DEFAULT_SYNC_STATUS_PATH): Syn
   return assertSyncStatus(raw);
 }
 
-/**
- * Reads the extracted body text for a settled ("ok") record. Returns null
- * for any other status — a `no_text`/`pending`/`error` record never had
- * text to begin with (D2/D13).
- */
-export function loadDocumentText(doc: ManifestDocument): string | null {
-  return loadDocumentBody(doc)?.text ?? null;
-}
-
 /** Text plus the page count, which is what a reader understands. */
 export function loadDocumentBody(
   doc: ManifestDocument

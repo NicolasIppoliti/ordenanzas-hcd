@@ -9,7 +9,7 @@
 // about intent.
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { createIndex } from 'pagefind';
-import { readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
@@ -43,6 +43,11 @@ function baseDoc(overrides: Partial<ManifestDocument> & { doc_id: string }): Man
   };
 }
 
+// The body is what makes this a FULL-TEXT fixture. Without a `text_path`,
+// `loadDocumentBody` returns null, the page carries only title and metadata, and
+// a query for "agua" matches the title — a test that asserts full-text indexing
+// while proving title indexing. The fixture body contains "potable", a word the
+// title does not, so the query below can only be answered from the body.
 const AGUA_DOC = baseDoc({
   doc_id: '4457-mesa-de-gestion-del-agua',
   number: 4457,
@@ -51,10 +56,11 @@ const AGUA_DOC = baseDoc({
   year: 2026,
   doc_type: 'ordenanza',
   status: 'ok',
+  text_path: 'site/tests/fixtures/agua-body.json',
 });
 
 // A real no_text scanned document: number, title and expediente present,
-// but the "Texto" section carries no body text, per data.ts (loadDocumentText
+// but the "Texto" section carries no body text, per data.ts (loadDocumentBody
 // returns null for anything other than 'ok').
 const NO_TEXT_DOC = baseDoc({
   doc_id: '3120-plan-de-obras',
@@ -110,7 +116,10 @@ let pagefind: {
   ): Promise<{ results: Array<{ data(): Promise<RawSearchResultData> }> }>;
   filters(): Promise<Record<string, Record<string, number>>>;
 };
-let restoreFetch: () => void;
+let restoreFetch: (() => void) | undefined;
+/** The AGUA_DOC page as indexed, so a test can prove a section rendered before
+ *  asserting that Pagefind refused to index it. */
+let aguaHtml = '';
 
 beforeAll(async () => {
   const container = await AstroContainer.create();
@@ -120,7 +129,14 @@ beforeAll(async () => {
   if (!index) throw new Error('Pagefind index creation failed');
 
   for (const doc of [AGUA_DOC, NO_TEXT_DOC, CONVENIO_DOC, SIN_CLASIFICAR_DOC]) {
-    const html = await container.renderToString(DetailPage, { props: { doc } });
+    // AGUA_DOC gets a sibling so its "Archivos con el mismo número" section
+    // actually renders. That section sits INSIDE the indexed body and carries
+    // `data-pagefind-ignore`, which is the only thing keeping it out of the
+    // index — and a test cannot prove an attribute works against markup that
+    // was never emitted.
+    const siblings = doc === AGUA_DOC ? [NO_TEXT_DOC] : [];
+    const html = await container.renderToString(DetailPage, { props: { doc, siblings } });
+    if (doc === AGUA_DOC) aguaHtml = html;
     const { errors } = await index.addHTMLFile({
       url: `/documento/${doc.doc_id}/`,
       content: html,
@@ -128,7 +144,7 @@ beforeAll(async () => {
     expect(errors, `indexing ${doc.doc_id}`).toEqual([]);
   }
 
-  outputPath = await fs_mkdtemp();
+  outputPath = await makeTempIndexDir();
   const { errors: writeErrors } = await index.writeFiles({ outputPath });
   expect(writeErrors).toEqual([]);
 
@@ -155,12 +171,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  restoreFetch();
+  // Optional call: `beforeAll` builds the site before it assigns this, so a
+  // failure up there would otherwise make teardown throw a TypeError that
+  // replaces the real error in the report.
+  restoreFetch?.();
   if (outputPath) await rm(outputPath, { recursive: true, force: true });
 });
 
-async function fs_mkdtemp(): Promise<string> {
-  const { mkdtemp, realpath } = await import('node:fs/promises');
+async function makeTempIndexDir(): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'pagefind-test-'));
   // macOS's os.tmpdir() is a symlink (/var -> /private/var). Pagefind's
   // generated runtime resolves its own chunk URLs relative to its resolved
@@ -170,15 +188,19 @@ async function fs_mkdtemp(): Promise<string> {
 }
 
 describe('real built Pagefind index', () => {
-  it('finds a text-bearing document by full text, with an excerpt', async () => {
-    const search = await pagefind.search('agua potable');
-    const urls = await Promise.all(search.results.map(async (r) => resultUrl(await r.data())));
-    expect(urls).toContain('/documento/4457-mesa-de-gestion-del-agua/');
+  it('finds a text-bearing document by a word that appears only in its body', async () => {
+    // "potable" is in the fixture body and not in the title, the number or any
+    // metadata, so a hit can only have come from the indexed text. Querying
+    // "agua" instead would have been answered by the title and proved nothing.
+    const search = await pagefind.search('potable');
+    const results = await Promise.all(search.results.map((r) => r.data()));
+    const hit = results.find((r) => resultUrl(r) === '/documento/4457-mesa-de-gestion-del-agua/');
+    expect(hit, JSON.stringify(results.map(resultUrl))).toBeDefined();
 
-    const firstResult = search.results[0];
-    if (!firstResult) throw new Error('expected at least one result');
-    const raw = await firstResult.data();
-    const display = toDisplayResult(raw);
+    // Asserted against THAT record, not against whichever ranked first: with a
+    // fifth fixture the first hit is a different document and the assertion
+    // would quietly move to it.
+    const display = toDisplayResult(hit!);
     expect(display.hasIndexedText).toBe(true);
     expect(display.excerpt).not.toBeNull();
   });
@@ -232,14 +254,39 @@ describe('real built Pagefind index', () => {
     expect(hit).toBeDefined();
     const display = toDisplayResult(hit!);
     expect(display.tipo).toBe('Documento sin clasificar');
-    expect(display.title).not.toMatch(/^\d/); // no digit-led fabricated number
+    // The record has no number and no title, so the title slot must carry the
+    // type label — D8's identifier rule. Asserting only "does not start with a
+    // digit" could not fail: with no `meta.title`, `toDisplayResult` falls back
+    // to the URL, which always starts with a slash.
+    expect(display.title).toBe('Documento sin clasificar');
   });
 
-  it('never indexes the ignored chrome (nav/footer text) as a match', async () => {
-    // "Archivo de Ordenanzas del HCD" only ever appears in Layout's nav,
-    // which carries data-pagefind-ignore; a hit here would mean chrome is
-    // being re-indexed once per page (the exact cost this decision avoids).
+  it('indexes nothing outside the article, which is what data-pagefind-body scopes', async () => {
+    // The skip link, the nav and the footer all sit outside <article
+    // data-pagefind-body>, so the body scope alone excludes them. This pins
+    // that scope — NOT the `data-pagefind-ignore` attribute, which the next
+    // test covers. An earlier version of this test claimed the attribute and
+    // named a string that appears in no nav at all.
+    expect(aguaHtml).toContain('Saltar al contenido principal');
     const search = await pagefind.search('Saltar al contenido principal');
+    expect(search.results).toHaveLength(0);
+  });
+
+  it('never indexes a section marked data-pagefind-ignore inside the article', async () => {
+    // The sibling and related lists sit INSIDE the indexed body, so only the
+    // attribute keeps them out. Remove it and every page would contribute its
+    // neighbours' headings to the haystack — the cost this decision avoids.
+    //
+    // The first assertion is what stops this from passing vacuously: zero hits
+    // proves nothing if the section never rendered.
+    // The heading, not the aria-label: the label alone would satisfy this guard
+    // even if the visible content of the section were gone.
+    // Astro stamps scoping attributes on the tag, so the heading is matched as
+    // a pattern rather than a literal string.
+    expect(aguaHtml, 'the sibling section must be on the page').toMatch(
+      /<h2[^>]*>Archivos con el mismo número<\/h2>/
+    );
+    const search = await pagefind.search('Archivos con el mismo número');
     expect(search.results).toHaveLength(0);
   });
 
