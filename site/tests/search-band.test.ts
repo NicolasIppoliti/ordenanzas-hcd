@@ -117,6 +117,19 @@ describe('the persistent search band', () => {
     expect(form).toContain('data-pagefind-ignore');
   });
 
+  it('gives the placeholder the same measured colour as the search page does', async () => {
+    // It is the same sentence in both fields. A UA default would make it the
+    // one piece of text on the site whose contrast nobody measured — and the
+    // palette test only checks tokens, so an unstyled placeholder is invisible
+    // to it.
+    const band = readFileSync(
+      join(process.cwd(), 'src', 'components', 'SearchBand.astro'),
+      'utf-8'
+    );
+    const rule = band.slice(band.indexOf('.search-band input::placeholder'));
+    expect(rule.slice(0, rule.indexOf('}'))).toContain('var(--text-muted)');
+  });
+
   it('labels the field, since a placeholder is not a label', async () => {
     // A placeholder disappears the moment someone types, and screen readers
     // treat it as a hint rather than a name.
