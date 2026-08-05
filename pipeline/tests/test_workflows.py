@@ -119,3 +119,27 @@ def test_deploy_job_checks_out_the_post_sync_commit() -> None:
         if str(step.get("uses", "")).startswith("actions/checkout")
     )
     assert checkout.get("with", {}).get("ref") == "main"
+
+
+def test_workflows_pin_their_toolchain() -> None:
+    """`version: latest` is not reproducible, and it already broke CI.
+
+    `pnpm/action-setup` with `latest` resolved pnpm 11.20.0, which requires Node >= 22.13,
+    while the workflows pinned Node 20 — so CI failed on a dependency nobody changed. A
+    build that can break on a Tuesday because an upstream release happened is not a gate.
+    Node must also match what the project is actually developed against.
+    """
+    for path in _workflow_files():
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                uses = str(step.get("uses", ""))
+                with_ = step.get("with", {}) or {}
+                if uses.startswith("pnpm/action-setup"):
+                    assert with_.get("version") not in (None, "latest"), (
+                        f"{path.name}: pin the pnpm version, never 'latest'"
+                    )
+                if uses.startswith("actions/setup-node"):
+                    assert int(str(with_.get("node-version"))) >= 22, (
+                        f"{path.name}: Node must be >= 22, which current pnpm requires"
+                    )

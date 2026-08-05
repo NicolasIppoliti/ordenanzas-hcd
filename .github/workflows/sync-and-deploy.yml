@@ -79,13 +79,15 @@ jobs:
         with:
           ref: main
 
+      # Pinned, never `latest`: an upstream pnpm release once required a newer
+      # Node than these workflows install, and CI broke on a day nobody touched it.
       - uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: "10.32.1"
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
           cache-dependency-path: site/pnpm-lock.yaml
 
