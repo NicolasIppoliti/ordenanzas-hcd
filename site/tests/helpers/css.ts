@@ -87,9 +87,11 @@ export const OFF_CANVAS =
       // to loosen four times. The margin branch below draws the same line for
       // the same reason.
       `(?:^|[\\s;{])(?:left|right|top|bottom|inset|inset-inline|inset-inline-start|inset-inline-end|inset-block|text-indent|translate)\\s*:[^;}]*?(?<![\\w-])-(?:\\d{3,}|\\d+\\s*(?:vw|vh|vmin|vmax)|\\d{2,}\\s*(?:rem|em))`,
-      // Transforms move the paint without moving the box, which scrolls just the
-      // same.
-      `(?:transform|translate)\\s*:[^;}]*(?:translate3d?|translate[XY])?\\(\\s*-`,
+      // Transforms move the paint without moving the box, which scrolls just
+      // the same — but only at a magnitude that leaves the viewport. The
+      // hamburger's two rules cross by translating six pixels, and a rule that
+      // rejected that would be the same over-reach as flagging `top: -2px`.
+      `(?:transform|translate)\\s*:[^;}]*?(?:translate3d?|translate[XY])?\\(\\s*-(?:\\d{3,}|\\d+\\s*(?:vw|vh|vmin|vmax)|\\d{2,}\\s*(?:rem|em))`,
       // Margins are different: a negative margin is an ordinary layout tool, and
       // the year strip legitimately bleeds its hover area 8px into the page's
       // padding. Only a magnitude that could carry an element off screen counts —

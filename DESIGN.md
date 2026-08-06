@@ -128,8 +128,10 @@ WCAG 1.4.11's 3:1. It is now 3.59:1 and 4.76:1.
 - **Approach:** grid-disciplined for lists and search, editorial measure for documents.
 - **Max content width:** 60rem. Document text: 68ch.
 - **Border radius:** 4px small, 8px medium. Nothing larger.
-- **No elevation scale.** This product has no overlays, no modals, nothing floating.
-  Shipping shadow tokens no component consumes is how a system starts to rot.
+- **No elevation scale.** No shadow tokens, no modals, and nothing floating except the one
+  thing that must: the phone menu's panel, which drops below the header over the page. It
+  separates itself with a surface fill and a rule rather than a shadow — shipping shadow tokens
+  no other component consumes is how a system starts to rot.
 
 ## Composition and voice
 
@@ -169,6 +171,18 @@ exception to it. A year holding one document gets a floored 3px of bar: at true 
 would be under a pixel and read as zero, and zero is a different claim from one. That floor
 overstates the smallest years, and it is the one place on the site where a mark is not to
 scale — stated here rather than left in a component comment.
+
+**The header collapses on a phone, without JavaScript.** The two links become a `<details>`
+menu below 34rem and a row above it, with CSS showing exactly one — `display: none` takes the
+other out of the accessibility tree, so nothing is announced twice. A `<details>` rather than a
+button and a script: it is the platform's disclosure widget, it opens on tap and on Enter, and
+it keeps the header at zero bytes of JavaScript on all 1,043 pages. The bars rotate into a
+cross when it opens, because the state has to be readable without the label.
+
+Measured while building it, and both are why the markup is shaped this way: CSS cannot force a
+closed `<details>` open on a wide screen — its content stays 0×0, so the wide layout is its own
+list rather than the same one restyled. And the panel is positioned out of flow, because a
+`<details>` left in flow grows when it opens and pushes the site name onto a row of its own.
 
 **Lists are columns, not bullets.** Every document row hangs its number in a tabular column
 and sets the title in the serif, the same treatment the article renderer gives article
