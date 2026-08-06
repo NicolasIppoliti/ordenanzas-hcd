@@ -426,3 +426,39 @@ describe('the two surfaces the owner saw break', () => {
     expect(ruleBody(query, '.hero h1')).toContain('var(--text-2xl)');
   });
 });
+
+describe('nothing is parked off the left edge of the page', () => {
+  it('hides the skip link without pushing it off-canvas', () => {
+    // `position: absolute; left: -9999px` is the classic way to hide a skip
+    // link, and on iOS Safari it makes the page horizontally scrollable: that
+    // engine counts overflow to the LEFT of the origin as scrollable area,
+    // where Chromium clamps it. A phone could drag the whole layout sideways
+    // and read the header cut off at the left edge.
+    //
+    // Headless Chromium reports no overflow either way, which is exactly why
+    // this shipped and why a measurement is not a proof unless it runs on the
+    // engine that has the problem. The replacement keeps the element at the
+    // origin with no size, which no engine can scroll to.
+    const layout = readFileSync(
+      join(process.cwd(), 'src', 'components', 'Layout.astro'),
+      'utf-8'
+    );
+    const hidden = ruleBody(layout, '.skip-link');
+
+    expect(hidden, 'off-canvas positioning is what caused the scroll').not.toMatch(/-\d{3,}px/);
+    expect(hidden).toContain('clip-path');
+
+    // Nothing of it may paint while hidden: padding and a border still draw
+    // around a 1px content box, and the link would sit as a small bordered
+    // artefact in the corner of all 1,043 pages.
+    expect(hidden).toContain('padding: 0');
+    expect(hidden).toContain('border: 0');
+
+    // And it must still become visible on focus, with the box back: a skip link
+    // nobody can see is a skip link that is not there.
+    const focused = ruleBody(layout, '.skip-link:focus');
+    expect(focused).toContain('clip-path: none');
+    expect(focused).toMatch(/padding:\s*var/);
+    expect(focused).toMatch(/border:\s*2px/);
+  });
+});
