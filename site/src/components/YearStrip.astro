@@ -80,6 +80,9 @@ const largestRow = Math.max(...rows.map((row) => row.count), 1);
     grid-template-columns: 11ch 1fr 4ch;
     align-items: center;
     gap: var(--space-3);
+    /* A full-row link a reader taps sixteen times: it gets the same 48px floor
+       as every other control, which the padding alone did not reach. */
+    min-height: 3rem;
     padding: var(--space-1) var(--space-2);
     margin-inline: calc(var(--space-2) * -1);
     border-radius: var(--radius-sm);
@@ -97,7 +100,7 @@ const largestRow = Math.max(...rows.map((row) => row.count), 1);
   }
   .bar {
     height: 0.625rem;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     background: var(--border);
     display: block;
   }
@@ -108,7 +111,7 @@ const largestRow = Math.max(...rows.map((row) => row.count), 1);
        under a pixel and reads as zero, which is a different claim from "one".
        The floor is the smallest mark that still says "some". */
     min-width: 3px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     background: var(--link);
   }
   .count {

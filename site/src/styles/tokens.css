@@ -49,7 +49,7 @@
  * Two constraints shape everything here, and both come from the product rather
  * than from taste:
  *
- * 1. No images, and two self-hosted webfonts totalling 45,656 bytes — no third
+ * 1. No images, and two self-hosted webfonts totalling 47,008 bytes — no third
  *    party, ever. This is a public utility whose running cost may not scale with
  *    traffic, and whose readers are mostly on phones on municipal-town
  *    connections. A request to a domain the archive does not control breaks the
@@ -134,7 +134,7 @@
    * Two self-hosted families, subset to Latin and served from this origin. A
    * font CDN would be a request to a domain the archive does not control, on
    * every page, for a site whose premise is that it costs nothing and depends
-   * on nobody. Measured: 18,504 + 27,152 = 45,656 bytes, cached once across
+   * on nobody. Measured: 18,504 + 28,504 = 47,008 bytes, cached once across
    * 1,043 pages. See the @font-face block above for how they were subset.
    *
    * Body is 17px, not the 15px a dashboard would use. That number is calibrated
@@ -155,6 +155,11 @@
   --text-lg: 1.25rem;     /* 20px  lead, card titles */
   --text-xl: 1.5rem;      /* 24px  section titles */
   --text-2xl: 1.875rem;   /* 30px  page title */
+  /* One display step above the page title, for the home hero and nothing else.
+     The scale stopped at 30px because every other page opens with a document
+     title; the home opens with the archive's one job, and 30px does not carry
+     that at the top of a landing. */
+  --text-3xl: 2.5rem;     /* 40px  home hero only */
 
   --leading-tight: 1.25;  /* headings */
   --leading-normal: 1.5;  /* UI text */

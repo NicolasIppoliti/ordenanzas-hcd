@@ -15,7 +15,7 @@
 // on every document, so the excerpt here was thirty identical uppercase words
 // carrying nothing a reader could act on.
 import type { ManifestDocument } from '../lib/contract';
-import { DOC_TYPE_LABELS, formatDocIdentifier } from '../lib/labels';
+import { DOC_TYPE_LABELS, documentHref, formatDocIdentifier } from '../lib/labels';
 
 interface Props {
   doc: ManifestDocument;
@@ -30,8 +30,13 @@ const meta = doc.year !== null ? `${typeLabel} · ${doc.year}` : typeLabel;
 ---
 
 <li class="doc-card">
-  <span class="doc-num">{doc.number}</span>
-  <a class="doc-title" href={`/documento/${doc.doc_id}`}>{label}</a>
+  {/* Rendered only when there is a number: an empty span becomes a blank line
+      above the title once the grid collapses to one column, for the 51 records
+      that have none. Because nothing then occupies the first column, the title
+      pins itself to the second — otherwise auto-placement drops it into the 6ch
+      number slot and it wraps every few characters. */}
+  {doc.number !== null && <span class="doc-num">{doc.number}</span>}
+  <a class="doc-title" href={documentHref(doc.doc_id)}>{label}</a>
   <p class="doc-meta">
     {meta}
     {!doc.title && <span> · sin título en el archivo de origen</span>}
@@ -57,6 +62,9 @@ const meta = doc.year !== null ? `${typeLabel} · ${doc.year}` : typeLabel;
     color: var(--text-muted);
   }
   .doc-title {
+    /* Pinned, not placed: with no number span there is nothing in column 1 and
+       auto-placement would put the title there. */
+    grid-column: 2;
     font-family: var(--font-serif);
     font-weight: var(--weight-semibold);
     font-size: var(--text-lg);
@@ -75,6 +83,7 @@ const meta = doc.year !== null ? `${typeLabel} · ${doc.year}` : typeLabel;
       grid-template-columns: 1fr;
       gap: 0;
     }
+    .doc-title,
     .doc-meta {
       grid-column: 1;
     }

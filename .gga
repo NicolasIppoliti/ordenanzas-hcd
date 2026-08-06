@@ -33,7 +33,11 @@ PROVIDER="claude"
 # This repo is two languages: a Python ingestion pipeline and an Astro/TS site.
 # The default TS-only pattern would have skipped the entire pipeline, including the
 # path-safety validator, the politeness policy and the robots.txt HALT.
-FILE_PATTERNS="*.py,*.ts,*.tsx,*.astro,*.mjs,*.yml,*.yaml"
+# Markdown is included on purpose: DESIGN.md is the source of truth for every
+# visual decision and AGENTS.md holds these very rules, and both carry measured
+# corpus facts that go stale exactly the way code comments do. Leaving them out
+# meant a change could cite a design decision the reviewer had no way to read.
+FILE_PATTERNS="*.py,*.ts,*.tsx,*.astro,*.mjs,*.yml,*.yaml,*.md"
 
 # File patterns to exclude from review (comma-separated)
 # Default: none

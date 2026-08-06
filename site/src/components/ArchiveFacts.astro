@@ -1,0 +1,125 @@
+---
+// Three measured facts about the corpus, each one a door into it.
+//
+// They are counts and extremes, never a chosen document. Featuring "the
+// ordinance you should read" would be an editorial layer, which this product
+// does not have and cannot have: the moment the archive ranks its own contents
+// it stops being a transcript and starts being an opinion.
+//
+// Every figure is computed in lib/highlights.ts at build time.
+import type { CorpusStats } from '../lib/highlights';
+import { documentHref } from '../lib/labels';
+
+interface Props {
+  stats: CorpusStats;
+  /** Page count of the longest document, when the source stated one. */
+  longestPages: number | null;
+}
+
+const { stats, longestPages } = Astro.props;
+// The tie can break: one more 2002 document and this is a single year, where
+// "tienen 1 documento cada uno" would be plural verb over one item. The verb and
+// "cada uno" follow how MANY years tie; the noun follows the count.
+const { years, count } = stats.quietestYears;
+const busiest = stats.busiestYears;
+const busiestListed =
+  busiest.years.length > 2
+    ? `${busiest.years.slice(0, -1).join(', ')} y ${busiest.years[busiest.years.length - 1]}`
+    : busiest.years.join(' y ');
+const noun = count === 1 ? 'documento' : 'documentos';
+// `join(' y ')` reads correctly for two and turns into "2002 y 2012 y 2015" for
+// three. The tie can grow as well as break: the archive syncs weekly.
+const listed =
+  years.length > 2
+    ? `${years.slice(0, -1).join(', ')} y ${years[years.length - 1]}`
+    : years.join(' y ');
+const quietest =
+  years.length === 1
+    ? `${listed} tiene ${count.toLocaleString('es-AR')} ${noun}`
+    : `${listed} tienen ${count.toLocaleString('es-AR')} ${noun} cada uno`;
+
+const longestSize =
+  longestPages !== null
+    ? `${longestPages.toLocaleString('es-AR')} páginas`
+    : // The trimmed length, which is what the document page states for the same
+      // record — the raw count includes the leading whitespace PDF extraction
+      // leaves behind, and two surfaces must not report different sizes.
+      `${stats.longest.trimmedCharacters.toLocaleString('es-AR')} caracteres`;
+---
+
+<ul class="facts">
+  <li>
+    <b>{longestSize}</b>
+    <p>
+      El documento más largo del archivo, con el texto navegable artículo por artículo.
+    </p>
+    <a href={documentHref(stats.longest.doc_id)}>Abrirlo</a>
+  </li>
+  <li>
+    <b>{stats.undated.toLocaleString('es-AR')} sin fecha</b>
+    <p>
+      El HCD no consignó el año en estos documentos. El archivo no lo deduce: los muestra igual,
+      agrupados aparte.
+    </p>
+    <a href="/documentos#anio-sin-determinar">Verlos</a>
+  </li>
+  <li>
+    <b>{busiestListed}</b>
+    <p>
+      {/* Not "publicados": `year` is the year stated in the document, and no
+          record carries a publication or sanction date. The count is the fact;
+          the act is not. Plural when years tie, for the same reason the quiet
+          end names every one of them. */}
+      {busiest.years.length === 1 ? 'Es el año' : 'Son los años'} con más documentos:
+      {' '}
+      {busiest.count.toLocaleString('es-AR')}
+      {busiest.years.length === 1 ? '' : ' cada uno'}.
+      En el otro extremo, {quietest}.
+    </p>
+    <a href={`/documentos#anio-${busiest.years[0]}`}>Ver {busiest.years[0]}</a>
+  </li>
+</ul>
+
+<style>
+  .facts {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+  .facts li {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    padding: var(--space-4);
+  }
+  /* Serif, and no `tabular-nums`: Fraunces has no `tnum` even upstream, and a
+     single display figure has nothing to align with. See DESIGN.md. */
+  .facts b {
+    display: block;
+    font-family: var(--font-serif);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-xl);
+    line-height: var(--leading-tight);
+  }
+  .facts p {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .facts a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 3rem;
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 46rem) {
+    .facts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

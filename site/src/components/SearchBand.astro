@@ -23,10 +23,13 @@ interface Props {
 const { hidden = false } = Astro.props;
 ---
 
-{/* `data-pagefind-ignore` rather than relying on every page declaring a
-    `data-pagefind-body`: this is chrome that repeats on 1,042 pages, and the day
-    a page forgets that attribute the word "Buscar" would enter the haystack a
-    thousand times over. Measured either way: 21,334 words. */}
+{/* `data-pagefind-ignore` rather than relying on the body scope: Pagefind
+    indexes only pages that declare `data-pagefind-body`, and today that is the
+    document pages alone — so this band is out of the index by accident of where
+    it appears, not by decision. The day a listing page starts declaring a body,
+    this chrome would enter the haystack once per page across 1,041 of the 1,043
+    built pages. The attribute makes it a decision. Measured either way: 21,334
+    words. */}
 {
   !hidden && (
     <form class="search-band" action="/buscar" method="get" role="search" data-pagefind-ignore>

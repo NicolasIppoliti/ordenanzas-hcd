@@ -6,6 +6,7 @@
 import { getDocuments } from '../../lib/data';
 import { loadAliasMap, resolveAliases } from '../../lib/aliases';
 import type { Alias } from '../../lib/contract';
+import { documentHref } from '../../lib/labels';
 
 export async function getStaticPaths() {
   const documents = getDocuments();
@@ -22,7 +23,7 @@ interface Props {
 }
 
 const { alias } = Astro.props as Props;
-const targetUrl = `/documento/${alias.target}`;
+const targetUrl = documentHref(alias.target);
 ---
 
 <!doctype html>

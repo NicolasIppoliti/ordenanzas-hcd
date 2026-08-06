@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
+import DocumentosPage from '../src/pages/documentos.astro';
 import IndexPage from '../src/pages/index.astro';
 import BuscarPage from '../src/pages/buscar.astro';
 import DetailPage from '../src/pages/documento/[doc_id].astro';
@@ -56,7 +57,9 @@ async function render(page: unknown, props: Record<string, unknown> = {}): Promi
 
 describe('the persistent search band', () => {
   it('is in the header of an ordinary page', async () => {
-    const html = await render(IndexPage);
+    // The browse page, not the home: the home is the one page where search is
+    // the hero, so it hides the band rather than shipping a second `q` field.
+    const html = await render(DocumentosPage);
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
 
     expect(header).toContain('search-band');
@@ -73,7 +76,7 @@ describe('the persistent search band', () => {
   });
 
   it('is a GET form that navigates, rather than a script that intercepts', async () => {
-    const html = await render(IndexPage);
+    const html = await render(DocumentosPage);
     const form = html.slice(html.indexOf('<form'), html.indexOf('</form>'));
 
     expect(form).toContain('action="/buscar"');
@@ -106,18 +109,29 @@ describe('the persistent search band', () => {
     expect(html.match(/id="q"/g)?.length).toBe(1);
   });
 
-  it('stays out of the search index it points at', async () => {
-    // Chrome that repeats on 1,042 pages — every page but the search page,
-    // which renders its own form. Today no page indexes it, because
-    // every one declares a `data-pagefind-body`; the attribute makes that
-    // independent of a page remembering to.
+  it('is absent from the home, where the search is the hero instead', async () => {
+    // Two fields sharing the `q` id their labels point at is the same
+    // accessibility defect the search page avoids the same way.
     const html = await render(IndexPage);
+    expect(html).not.toContain('search-band');
+    expect(html.match(/id="q"/g) ?? [], 'exactly one field on the page').toHaveLength(1);
+  });
+
+  it('stays out of the search index it points at', async () => {
+    // Chrome that repeats on 1,041 of the 1,043 built pages — every one except
+    // the search page and the home, which render their own field. Today it is
+    // already out of the index for a different reason: Pagefind indexes only
+    // pages that declare `data-pagefind-body`, and the document pages are the
+    // only ones that do — so this band is out of the index by accident of where
+    // it appears, not by decision. The attribute makes it a decision, and keeps
+    // it one the day a listing page starts declaring a body of its own.
+    const html = await render(DocumentosPage);
     const form = html.slice(html.indexOf('<form'), html.indexOf('</form>'));
 
     expect(form).toContain('data-pagefind-ignore');
   });
 
-  it('gives the placeholder the same measured colour as the search page does', async () => {
+  it('gives the placeholder the same measured colour as the search page does', () => {
     // It is the same sentence in both fields. A UA default would make it the
     // one piece of text on the site whose contrast nobody measured — and the
     // palette test only checks tokens, so an unstyled placeholder is invisible
@@ -133,7 +147,7 @@ describe('the persistent search band', () => {
   it('labels the field, since a placeholder is not a label', async () => {
     // A placeholder disappears the moment someone types, and screen readers
     // treat it as a hint rather than a name.
-    const html = await render(IndexPage);
+    const html = await render(DocumentosPage);
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
 
     expect(header).toMatch(/<label[^>]*for="q-band"|aria-label="Buscar/);

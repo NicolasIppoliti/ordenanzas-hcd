@@ -1,0 +1,194 @@
+---
+// The home is the one page where search IS the point, so the field gets the
+// size that says so. The header band hides itself here rather than shipping a
+// second element with the `q` id its label points at.
+//
+// Same plain GET form as the band: it works with the keyboard, it needs no
+// JavaScript, and it navigates to the page that owns the Pagefind runtime.
+//
+// The shortcuts underneath are searches, never categories. "Documentos que
+// mencionan obras" is a count measured over the corpus; "ordenanzas de obras"
+// would be a classification nobody made, which is the same fabrication as an
+// invented title. Their counts come from lib/highlights.ts, computed at build
+// time — a number typed here would go stale the week the archive grows.
+//
+// The count is a fact about the CORPUS, not a promise about the result page:
+// Pagefind tokenises and stems on its own terms, so a search for `obras` may
+// return a different set than the 150 documents that contain the word. Each
+// chip therefore says what its number counts, in the link's accessible name and
+// in the label above the list. That accessible name OPENS with the visible text
+// — "obras 150: buscar documentos…" — because WCAG 2.5.3 asks the visible label
+// to be part of the spoken one, and someone using voice control says what they
+// can see. Making the two agree would mean counting through
+// Pagefind at build time, which is a heavier build for a number a reader reads
+// as "there is plenty here".
+import type { ShortcutTerm } from '../lib/highlights';
+
+interface Props {
+  total: string;
+  shortcuts: ReadonlyArray<ShortcutTerm & { count: number }>;
+}
+
+const { total, shortcuts } = Astro.props;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  {/* Not "toda la normativa de Coronel Rosales": this archive holds what the
+      HCD publishes, which is not every norm in the district — the Executive's
+      are not here — and the sync is weekly, so the set is up to seven days
+      behind by construction. The headline states the measured thing instead. */}
+  <h1 id="hero-title">Los {total} documentos del Concejo Deliberante, buscables</h1>
+  <p class="sub">
+    Completos y gratis, tal como los publicó el Concejo. Sin usuario y sin tener que saber el
+    número.
+  </p>
+
+  <form class="big-search" action="/buscar" method="get" role="search">
+    <label for="q">Buscar en el archivo</label>
+    <div class="row">
+      <input
+        type="search"
+        id="q"
+        name="q"
+        placeholder="Probá con «4270», «2024» o «guardavidas»…"
+        enterkeyhint="search"
+      />
+      <button type="submit">Buscar</button>
+    </div>
+  </form>
+
+  <div class="shortcuts">
+    <p id="shortcuts-label">
+      O empezá por una palabra, con la cantidad de documentos que la mencionan:
+    </p>
+    <ul aria-labelledby="shortcuts-label">
+      {
+        shortcuts.map((shortcut) => (
+          <li>
+            <a
+              href={`/buscar?q=${encodeURIComponent(shortcut.query)}`}
+              aria-label={`${shortcut.term} ${shortcut.count}: buscar documentos que mencionan la palabra`}
+            >
+              {shortcut.term} <span class="count">{shortcut.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-top: var(--space-4);
+  }
+  .hero h1 {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+    letter-spacing: -0.015em;
+    margin: 0;
+    max-width: 17ch;
+  }
+  .sub {
+    font-size: var(--text-lg);
+    color: var(--text-muted);
+    max-width: 48ch;
+    margin: var(--space-4) 0 0;
+  }
+
+  .big-search {
+    margin-top: var(--space-6);
+    max-width: 42rem;
+  }
+  .big-search label {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-2);
+  }
+  .row {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .big-search input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: var(--text-lg);
+    color: var(--text);
+    background: var(--bg);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    min-height: 3.25rem;
+  }
+  .big-search input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+  .big-search button {
+    font: inherit;
+    font-weight: var(--weight-medium);
+    color: var(--bg);
+    background: var(--link);
+    border: 1.5px solid var(--link);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    min-height: 3.25rem;
+    cursor: pointer;
+  }
+  .big-search button:hover {
+    background: var(--link-hover);
+    border-color: var(--link-hover);
+  }
+
+  .shortcuts {
+    margin-top: var(--space-4);
+    max-width: 42rem;
+  }
+  .shortcuts p {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .shortcuts ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .shortcuts a {
+    /* 48px like every other control on the site. These are the smallest tap
+       targets on the page built for phones, so the floor matters most here.
+       The boundary uses --border-strong, measured at 3.59:1 — a chip is a
+       control, and a control's edge is not decoration. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 3rem;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    /* 8px, not a pill: DESIGN.md's radius scale ends at medium and says nothing
+       larger, and a chip is not worth an exception to a rule that keeps every
+       other surface on the site consistent. */
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    text-decoration: none;
+  }
+  .shortcuts a:hover {
+    border-color: var(--link);
+  }
+  /* The count is the fact; the word is the door. */
+  .count {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 34rem) {
+    .row {
+      flex-direction: column;
+    }
+  }
+</style>

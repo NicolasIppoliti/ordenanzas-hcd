@@ -1,33 +1,44 @@
 ---
-// The home page answers two questions in order: "what can I do here" and "what
-// is in here". It used to answer neither — it described the system, offered four
-// competing entry points, and listed recent documents with the browser's default
-// bullets under thirty words of uppercase letterhead.
+// The home is a landing and an index at once: it has to make a reader want to
+// stay and give them somewhere to go in the same screen. It answers three
+// questions, in this order — what can I do here, how big is this, and what is
+// in it — and every answer is a measured fact rather than a claim.
 //
-// The search band in the header is now the only search entry above the fold.
-// The year strip is the second question: it is the one place on the site that
-// says how much there is and from when.
+// Search is the hero, because on this page it is the whole point; the header
+// band hides itself here rather than shipping a second `q` field. The shortcut
+// chips are the invitation to touch something before you know what to type, and
+// they are searches, never categories: a count of documents that mention a word
+// is a fact, a category would be a classification nobody made.
 //
-// D12: copy counts documents, never ordinances. "Recent" means the highest
-// ordinance number within the most recent stated year — the closest reading of
-// recency the manifest supports, since no record carries a sanction date.
+// D12: copy counts documentos, never ordenanzas. "Recent" means the highest
+// number within the most recent stated year — the closest reading of recency
+// the manifest supports, since no record carries a sanction date.
 //
 // The tiebreak inside a year is load-bearing, not decoration: 2026 holds nine
 // records and this list shows eight. Ordering by doc_id instead dropped 4457,
-// the highest number in the archive, from a section headed "lo último".
+// the highest number in the archive, from a section headed "lo más nuevo".
 //
-// The copy speaks to a resident and takes every number from the manifest. It
-// says nothing about the body that publishes these documents. That restraint is
-// a written rule of this project and also plain sense: the archive is
-// unofficial and exists because the HCD tolerates it, so any sentence whose
-// energy came from an enemy would be aimed at the only enemy available.
+// The copy speaks to a resident and takes every number from the corpus. It says
+// nothing about the body that publishes these documents. That restraint is a
+// written rule of this project and also plain sense: the archive is unofficial
+// and exists because the HCD tolerates it, so any sentence whose energy came
+// from an enemy would be aimed at the only enemy available.
 import Layout from '../components/Layout.astro';
+import ArchiveFacts from '../components/ArchiveFacts.astro';
 import DocCard from '../components/DocCard.astro';
+import SearchHero from '../components/SearchHero.astro';
 import YearStrip from '../components/YearStrip.astro';
-import { getDocuments } from '../lib/data';
+import { getDocuments, loadDocumentBody } from '../lib/data';
+import { homeHighlights } from '../lib/highlights';
 
 const documents = getDocuments();
 const total = documents.length.toLocaleString('es-AR');
+const { stats, shortcuts } = homeHighlights(documents);
+
+// The page count of the longest document, which is what a reader understands —
+// 207 páginas says something; 676.955 caracteres says nothing.
+const longest = documents.find((doc) => doc.doc_id === stats.longest.doc_id);
+const longestPages = longest ? (loadDocumentBody(longest)?.pages ?? null) : null;
 
 const recent = [...documents]
   .sort((a, b) => {
@@ -49,32 +60,53 @@ const recent = [...documents]
 ---
 
 <Layout
-  title={`Buscá cualquier ordenanza de Coronel Rosales — ${total} documentos`}
+  title={`Los ${total} documentos del Concejo Deliberante de Coronel Rosales, buscables`}
   description={`Los ${total} documentos publicados por el Honorable Concejo Deliberante de Coronel Rosales, completos y consultables.`}
+  searchBand={false}
 >
-  <h1>Buscá cualquier ordenanza de Coronel Rosales</h1>
-  {/* D12: the copy counts documentos, never ordenanzas — 51 records carry no
-      number and seven document types are in here, so "1.038 ordenanzas" would
-      be a claim the manifest does not support. The h1 is an action, not a
-      count, which is why it may say "ordenanza". */}
-  <p class="lede">
-    {total} documentos que publicó el Concejo Deliberante, completos y gratis. Sin trámite, sin
-    usuario y sin tener que saber el número.
-  </p>
+  <SearchHero total={total} shortcuts={shortcuts} />
+
+  <section class="stats" aria-label="El archivo en números">
+    <div>
+      <b>{total}</b>
+      <span>documentos</span>
+    </div>
+    <div>
+      <b>{stats.withText.toLocaleString('es-AR')}</b>
+      <span>con el texto completo adentro</span>
+    </div>
+    <div>
+      <b>{stats.firstYear}—{stats.lastYear}</b>
+      <span>de punta a punta</span>
+    </div>
+    <div>
+      <b>Semanal</b>
+      <span>se sincroniza con el HCD</span>
+    </div>
+  </section>
 
   <section aria-labelledby="que-hay">
-    <h2 id="que-hay">Y si no sabés el número, empezá por el año</h2>
+    <h2 id="que-hay">Si no sabés el número, empezá por el año</h2>
     <YearStrip documents={documents} />
+  </section>
+
+  <section aria-labelledby="datos">
+    <h2 id="datos">Tres cosas que tiene este archivo</h2>
+    <p class="note">
+      Conteos y extremos medidos sobre el corpus. Ninguno interpreta qué dice una ordenanza, y
+      cada uno lleva a los documentos que lo respaldan.
+    </p>
+    <ArchiveFacts stats={stats} longestPages={longestPages} />
   </section>
 
   <section aria-labelledby="ultimos">
     {/* Not "lo último que sancionó el Concejo". This list carries no type
-        filter, and the archive holds 28 convenios, 8 anexos, a resolución and a
-        decreto: a convenio is signed and a decreto is dictado, so the heading
+        filter, and the archive holds 28 convenios, 8 anexos, one resolución and
+        one decreto: a convenio is signed and a decreto issued, so that heading
         would assert a legislative act that did not happen the first time a
         non-ordenanza reaches the top. It also has no sanction date to work
         from, so the heading says which ordering it is showing instead of
-        claiming recency it cannot establish. */}
+        claiming a recency it cannot establish. */}
     <h2 id="ultimos">Lo más nuevo del archivo, por año y número</h2>
     <ul class="doc-list">
       {recent.map((doc) => <DocCard doc={doc} />)}
@@ -83,20 +115,48 @@ const recent = [...documents]
 </Layout>
 
 <style>
-  .lede {
-    font-size: var(--text-lg);
-    line-height: var(--leading-normal);
+  /* The numbers band is the only full-bleed surface on the site. It earns that
+     by being the one thing on the page a reader can take in without reading. */
+  .stats {
+    margin-top: var(--space-12);
+    padding-block: var(--space-6);
+    border-block: 1px solid var(--border);
+    background: var(--bg-surface);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+  }
+  /* Serif, and NO `tabular-nums`: Fraunces carries no `tnum` feature even
+     upstream, so the declaration was a no-op that read as a measured decision.
+     These are display figures — one number per cell, nothing to align with —
+     which is the exception DESIGN.md states for the data-in-sans rule. */
+  .stats b {
+    display: block;
+    font-family: var(--font-serif);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-xl);
+    line-height: var(--leading-tight);
+  }
+  .stats span {
+    display: block;
+    font-size: var(--text-sm);
     color: var(--text-muted);
-    max-width: var(--measure);
-    margin: var(--space-3) 0 0;
+    margin-top: var(--space-2);
+    max-width: 18ch;
   }
 
-  section {
+  section:not(.stats) {
     margin-top: var(--space-12);
   }
   section h2 {
     font-size: var(--text-xl);
     margin: 0;
+  }
+  .note {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    max-width: var(--measure);
   }
 
   /* This rule must live here, with the element. Astro scopes styles per
@@ -107,5 +167,12 @@ const recent = [...documents]
     list-style: none;
     margin: var(--space-4) 0 0;
     padding: 0;
+  }
+
+  @media (max-width: 46rem) {
+    .stats {
+      grid-template-columns: repeat(2, 1fr);
+      row-gap: var(--space-6);
+    }
   }
 </style>
