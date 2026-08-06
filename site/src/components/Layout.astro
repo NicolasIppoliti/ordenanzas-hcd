@@ -79,20 +79,38 @@ const syncStatus = loadSyncStatus();
       a:hover {
         color: var(--link-hover);
       }
+      /* Hidden by clipping, not by being parked off-canvas.
+         `position: absolute; left: -9999px` is the classic form and it makes the
+         page horizontally scrollable on iOS Safari, which counts overflow to the
+         LEFT of the origin as scrollable area where Chromium clamps it. A phone
+         could drag the whole layout sideways and read the header cut off at its
+         left edge. Clipped at the origin, there is nothing to scroll to. */
       .skip-link {
         position: absolute;
-        left: -9999px;
-        top: 0;
+        left: var(--space-2);
+        top: var(--space-2);
+        z-index: 10;
+        /* Clipped to nothing, and with no padding or border of its own: those
+           paint even when the content box is 1px, and the link would sit as a
+           small bordered artefact in the corner of all 1,043 pages. */
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        border: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
         background: var(--bg);
         color: var(--text);
-        padding: var(--space-2) var(--space-4);
-        z-index: 10;
-        border: 2px solid var(--focus);
         border-radius: var(--radius-sm);
       }
       .skip-link:focus {
-        left: var(--space-2);
-        top: var(--space-2);
+        width: auto;
+        height: auto;
+        padding: var(--space-2) var(--space-4);
+        border: 2px solid var(--focus);
+        overflow: visible;
+        clip-path: none;
       }
       :focus-visible {
         outline: 3px solid var(--focus);

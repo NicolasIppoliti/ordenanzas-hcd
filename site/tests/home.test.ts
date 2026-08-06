@@ -21,6 +21,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { markupBetween, ruleBody } from './helpers/css';
 import IndexPage from '../src/pages/index.astro';
 import { getDocuments } from '../src/lib/data';
 import { homeHighlights } from '../src/lib/highlights';
@@ -28,7 +29,7 @@ import { homeHighlights } from '../src/lib/highlights';
 const { shortcuts } = homeHighlights();
 
 const html = await (await AstroContainer.create()).renderToString(IndexPage);
-const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+const main = markupBetween(html, '<main', '</main>');
 
 /** Every year-strip row, as anchor id -> the count it actually renders.
  *
@@ -36,36 +37,21 @@ const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
  * `/documentos#anio-…` too, and a lazy match across the whole page would start
  * reading their numbers the day any `class="count"` appears below them. The
  * assertion would keep passing while measuring another component. */
-const yearStripMarkup = main.slice(
-  main.indexOf('year-strip'),
-  main.indexOf('</ul>', main.indexOf('year-strip'))
-);
+const yearStripMarkup = (() => {
+  return markupBetween(main, 'year-strip', '</ul>');
+})();
 const rows = new Map<string, number>(
-  [...yearStripMarkup.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+  [...yearStripMarkup.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"(?:(?!<\/li>)[\s\S])*?class="count"[^>]*>(\d+)</g)].map(
     (match) => [match[1] ?? '', Number(match[2])]
   )
 );
 
-/** The body of a CSS rule, found by selector.
- *
- * Matched as a pattern, never with `indexOf` on a literal: that demands exactly
- * one space before the brace, and on `.doc-card{` it returns -1, so `slice(-1)`
- * hands back the last character of the file and the assertion blames a missing
- * declaration for a selector that merely moved. This file learned that once and
- * then repeated the literal form in five more places. */
-function ruleBody(source: string, selector: string): string {
-  const pattern = new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{`);
-  const start = source.search(pattern);
-  if (start === -1) throw new Error(`no rule for ${selector}`);
-  const rest = source.slice(start);
-  return rest.slice(rest.indexOf('{') + 1, rest.indexOf('}'));
-}
 
 describe('one way in', () => {
   it('offers a single search entry above the recent documents', () => {
     // The header band is the search. A second "Buscar en 1.038 documentos" link
     // under it asks the reader to choose between two doors to the same room.
-    const beforeList = main.slice(0, main.indexOf('doc-list'));
+    const beforeList = markupBetween(main, '<main', 'doc-list');
     expect(beforeList.match(/href="\/buscar"/g) ?? []).toHaveLength(0);
   });
 
@@ -192,8 +178,7 @@ describe('"lo último" is actually the latest', () => {
     // Concejo. Today every record in the top eight happens to be an ordenanza,
     // which is exactly why a heading that asserts the act would go unnoticed
     // until the first one that is not.
-    const heading = main.slice(main.indexOf('id="ultimos"'));
-    expect(heading.slice(0, heading.indexOf('</h2>')).toLowerCase()).not.toContain('sancion');
+    expect(markupBetween(main, 'id="ultimos"', '</h2>').toLowerCase()).not.toContain('sancion');
     // Every row carries its own type label, so a mixed list stays truthful.
     expect(main).toContain('class="doc-meta"');
     expect(main).toContain('Ordenanza ·');
@@ -205,7 +190,7 @@ describe('the landing surfaces', () => {
     // The home is the one page where search is the whole point, so it gets a
     // field a reader cannot miss. The header band hides itself here rather than
     // duplicating the `q` id its label points at.
-    const hero = main.slice(main.indexOf('<h1'), main.indexOf('</form>'));
+    const hero = markupBetween(main, '<h1', '</form>');
     expect(hero).toContain('name="q"');
     expect(html.match(/name="q"/g) ?? [], 'exactly one search field on the page').toHaveLength(1);
     expect(main).toContain('action="/buscar"');
@@ -224,10 +209,9 @@ describe('the landing surfaces', () => {
     // Scoped to the chip list, for the same reason the year-strip map is: a
     // lazy match across <main> would start reading another component's
     // `class="count"` the day a chip lost its own.
-    const chips = main.slice(main.indexOf('class="shortcuts"'));
-    const list = chips.slice(0, chips.indexOf('</ul>'));
+    const list = markupBetween(main, 'class="shortcuts"', '</ul>');
     const rendered = new Map(
-      [...list.matchAll(/href="\/buscar\?q=([^"]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+      [...list.matchAll(/href="\/buscar\?q=([^"]+)"(?:(?!<\/li>)[\s\S])*?class="count"[^>]*>(\d+)</g)].map(
         (match) => [decodeURIComponent(match[1] ?? ''), Number(match[2])]
       )
     );
@@ -240,8 +224,7 @@ describe('the landing surfaces', () => {
   it('states only figures it measured', () => {
     // Every number in the band comes from the corpus, so none of them can go
     // stale the week the archive grows.
-    const band = main.slice(main.indexOf('class="stats"'));
-    const head = band.slice(0, band.indexOf('</section>'));
+    const head = markupBetween(main, 'class="stats"', '</section>');
 
     expect(head).toContain('1.038');
     expect(head).toContain('894');
@@ -257,8 +240,10 @@ describe('the landing surfaces', () => {
     // Scoped to the card: `108` also renders in the year strip, so an unscoped
     // check stays green with the card blanked — the shape this file warns about
     // twice already.
-    const cards = main.slice(main.indexOf('class="facts"'));
-    expect(cards.slice(0, cards.indexOf('</ul>')), 'the fullest year, counted').toContain('108');
+    expect(
+      markupBetween(main, 'class="facts"', '</ul>'),
+      'the fullest year, counted'
+    ).toContain('108');
   });
 
   it('ships no JavaScript for any of it', () => {
@@ -273,7 +258,7 @@ describe('the copy speaks to a resident without pointing at the source', () => {
     // The headline says what is here; the field and its button say what to do.
     // Splitting them that way is what lets the h1 stay short enough to read at
     // 40px on a phone.
-    const h1 = main.slice(main.indexOf('<h1'), main.indexOf('</h1>'));
+    const h1 = markupBetween(main, '<h1', '</h1>');
     expect(h1).toContain('1.038 documentos del Concejo Deliberante');
     expect(main.indexOf('name="q"'), 'the field follows the headline').toBeGreaterThan(
       main.indexOf('</h1>')
