@@ -74,7 +74,7 @@ dashboard):
 
 | Token | Size | Use |
 |---|---|---|
-| `--text-3xl` | 40px | home hero, and nothing else |
+| `--text-3xl` | 40px | home hero, and nothing else. Steps down to `--text-2xl` below 34rem, where 40px runs the headline to five lines and pushes the search field under the fold |
 | `--text-2xl` | 30px | page title |
 | `--text-xl` | 24px | section title |
 | `--text-lg` | 20px | lead, result title |

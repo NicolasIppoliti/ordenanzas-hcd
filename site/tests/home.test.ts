@@ -367,11 +367,14 @@ describe('the two surfaces the owner saw break', () => {
       join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
       'utf-8'
     );
+    // Scoped to the rule itself, the way the sibling assertions in this file
+    // are: an earlier version sliced to `indexOf('.big-search')`, which is -1
+    // inside this media query, so the bounds collapsed and it read the whole
+    // tail — the exact shape this file warns about twice.
     const query = hero.slice(hero.indexOf('@media (max-width: 34rem)'));
+    const rule = query.slice(query.indexOf('.hero h1 {'));
 
     expect(query).toContain('.hero h1');
-    expect(query.slice(0, query.indexOf('.big-search') + 1 || undefined)).toContain(
-      'var(--text-2xl)'
-    );
+    expect(rule.slice(0, rule.indexOf('}'))).toContain('var(--text-2xl)');
   });
 });
