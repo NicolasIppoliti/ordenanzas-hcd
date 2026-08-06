@@ -331,3 +331,17 @@ describe('the one figure the manifest cannot answer', () => {
     expect(hour).toMatch(/^\d+$/);
   });
 });
+
+describe('the chip word and its count are two things', () => {
+  it('separates them, since the markup does not', () => {
+    // Astro drops the whitespace between `{shortcut.term}` and the count span,
+    // so the chips shipped reading "salud163". No rendering test can see that —
+    // the two nodes are there either way — so the gap is asserted at source.
+    const hero = readFileSync(
+      join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
+      'utf-8'
+    );
+    const rule = hero.slice(hero.indexOf('.shortcuts a {'));
+    expect(rule.slice(0, rule.indexOf('}'))).toContain('gap:');
+  });
+});

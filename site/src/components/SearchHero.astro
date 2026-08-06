@@ -168,6 +168,9 @@ const { total, shortcuts } = Astro.props;
        control, and a control's edge is not decoration. */
     display: inline-flex;
     align-items: center;
+    /* The gap, not a literal space: Astro drops the whitespace between the word
+       and its count, and the chips shipped reading "salud163". */
+    gap: var(--space-2);
     min-height: 3rem;
     border: 1px solid var(--border-strong);
     background: var(--bg-surface);
