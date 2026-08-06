@@ -149,22 +149,125 @@ const syncStatus = loadSyncStatus();
         padding: var(--space-4);
       }
       header {
+        position: relative;
         border-bottom: 1px solid var(--border);
-        padding-block: var(--space-2);
+        padding-block: var(--space-3);
       }
       nav {
         display: flex;
         flex-wrap: wrap;
         gap: 0 var(--space-6);
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         width: 100%;
         font-size: var(--text-sm);
       }
+      nav ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* The wide layout: a row of links, hidden until the breakpoint takes
+         over. The media query that swaps the two lives at the END of this block,
+         after every rule it has to beat — an earlier one loses to any later
+         declaration of the same specificity, which is how the phone menu first
+         shipped visible on a 1280px screen. */
       .nav-links {
+        display: none;
+      }
+
+      /* The phone menu. The marker is removed and replaced by two rules that
+         rotate into a cross when it opens — the state has to be visible without
+         reading the label, and colour alone would not carry it. */
+      /* The trigger stays on the brand's line and the panel drops out of flow
+         beneath the whole header. A `<details>` left in flow grows when it
+         opens, which pushed the brand onto a row of its own and squeezed the
+         links into a column beside it. */
+      .nav-menu {
+        display: block;
+      }
+      .nav-menu summary {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0 var(--space-6);
+        align-items: center;
+        gap: var(--space-2);
+        min-height: 3rem;
+        padding-inline: var(--space-2);
+        margin-inline: calc(var(--space-2) * -1);
+        border-radius: var(--radius-sm);
+        color: var(--link);
+        cursor: pointer;
+        list-style: none;
+      }
+      .nav-menu summary::-webkit-details-marker {
+        display: none;
+      }
+      .bars {
+        position: relative;
+        display: block;
+        width: 1.125rem;
+        height: 2px;
+        background: currentColor;
+        transition: background var(--duration-micro) var(--ease-out);
+      }
+      .bars::before,
+      .bars::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: currentColor;
+        transition: transform var(--duration-micro) var(--ease-out);
+      }
+      .bars::before {
+        top: -6px;
+      }
+      .bars::after {
+        top: 6px;
+      }
+      .nav-menu[open] .bars {
+        background: transparent;
+      }
+      .nav-menu[open] .bars::before {
+        transform: translateY(6px) rotate(45deg);
+      }
+      .nav-menu[open] .bars::after {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+      .nav-menu ul {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        padding-inline: var(--space-4);
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-menu li + li {
+        border-top: 1px solid var(--border);
+      }
+      .nav-menu ul a {
+        display: flex;
+        align-items: center;
+        min-height: 3rem;
+      }
+
+      /* The swap, LAST: an earlier media query loses to any later declaration of
+         the same specificity, and the phone menu first shipped visible on a
+         1280px screen because this sat above the rules it has to beat. */
+      @media (min-width: 34rem) {
+        .nav-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0 var(--space-6);
+        }
+        .nav-menu {
+          display: none;
+        }
       }
       /* The name of the archive, in the archive's own face. It is not a
          destination competing with the two links beside it, so it carries
@@ -172,7 +275,7 @@ const syncStatus = loadSyncStatus();
       .site-name {
         font-family: var(--font-serif);
         font-weight: var(--weight-semibold);
-        font-size: var(--text-base);
+        font-size: var(--text-lg);
         color: var(--text);
         text-decoration: none;
       }
@@ -236,14 +339,39 @@ const syncStatus = loadSyncStatus();
     <header>
       <nav aria-label="Principal" data-pagefind-ignore>
         {/* Two groups, not three peers: the name of the archive, and the places
-            you can go. Spreading all three edge to edge made the middle link
-            look stranded and gave the site name the same weight as a
-            destination. */}
+            you can go.
+
+            The links appear twice and CSS decides which set exists — a row on a
+            wide screen, a `<details>` menu on a phone. `display: none` takes the
+            other one out of the accessibility tree entirely, so nothing is
+            announced twice, and both live inside this one landmark.
+
+            A `<details>` rather than a button and a script: it is the platform's
+            disclosure widget, it opens on tap and on Enter, and it costs zero
+            bytes of JavaScript on all 1,043 pages. Measured first: CSS cannot
+            force a closed `<details>` open on wide screens — its content stays
+            0×0 — which is why the wide layout is its own list rather than the
+            same one restyled. */}
         <a href="/" class="site-name">Ordenanzas del HCD</a>
-        <span class="nav-links">
-          <a href="/documentos">Todos los documentos</a>
-          <a href="/acerca">Acerca</a>
-        </span>
+
+        <ul class="nav-links">
+          <li><a href="/documentos">Todos los documentos</a></li>
+          <li><a href="/acerca">Acerca</a></li>
+        </ul>
+
+        <details class="nav-menu">
+          {/* No `aria-label`: it would replace the visible "Menú" as the
+              accessible name and keep saying "Abrir" while open. A `<summary>`
+              already announces itself as expanded or collapsed. */}
+          <summary>
+            <span class="bars" aria-hidden="true"></span>
+            Menú
+          </summary>
+          <ul>
+            <li><a href="/documentos">Todos los documentos</a></li>
+            <li><a href="/acerca">Acerca</a></li>
+          </ul>
+        </details>
       </nav>
       <SearchBand hidden={!searchBand} />
     </header>

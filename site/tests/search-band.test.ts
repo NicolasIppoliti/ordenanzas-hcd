@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
+import { ruleBody } from './helpers/css';
 import DocumentosPage from '../src/pages/documentos.astro';
 import IndexPage from '../src/pages/index.astro';
 import BuscarPage from '../src/pages/buscar.astro';
@@ -213,5 +214,76 @@ describe('the header', () => {
 
     expect(body).toContain('var(--font-serif)');
     expect(body).toContain('text-decoration: none');
+  });
+});
+
+describe('the header on a phone', () => {
+  it('collapses the links behind a menu, and opens it without JavaScript', async () => {
+    // A `<details>` is a disclosure widget in the platform: it opens on tap and
+    // on Enter, it announces itself to a screen reader, and it costs nothing.
+    // The alternative — a button plus a script — would put JavaScript in the
+    // header of all 1,043 pages to hide two links.
+    const html = await render(DocumentosPage);
+    const nav = html.slice(html.indexOf('<nav aria-label="Principal"'), html.indexOf('</nav>'));
+
+    expect(nav).toContain('<details');
+    expect(nav).toContain('<summary');
+    expect(html.match(/<script/g) ?? [], 'the menu ships no script').toHaveLength(1);
+  });
+
+  it('keeps one main-navigation landmark, not two', async () => {
+    // The wide layout and the phone menu are two presentations of the same
+    // links, so they live inside a single `<nav>`. Two would have a screen
+    // reader announce the main navigation twice.
+    //
+    // Counted by label, not by tag: the browse page has its own year-index
+    // `<nav>`, which is a different landmark and should stay.
+    const html = await render(DocumentosPage);
+    expect(html.match(/<nav aria-label="Principal"/g) ?? []).toHaveLength(1);
+  });
+
+  it('declares the breakpoint after the rules it has to beat', () => {
+    // A media query does not outrank a later declaration of the same
+    // specificity. With `@media (min-width: 34rem) { .nav-menu { display: none } }`
+    // written above `.nav-menu { display: block }`, the phone menu shipped
+    // visible on a 1280px screen — measured, not imagined. Order is the whole
+    // mechanism, and nothing else in the suite can see it.
+    const layout = readFileSync(
+      join(process.cwd(), 'src', 'components', 'Layout.astro'),
+      'utf-8'
+    );
+
+    expect(layout.indexOf('@media (min-width: 34rem)')).toBeGreaterThan(
+      layout.indexOf('.nav-menu {')
+    );
+    expect(layout.indexOf('@media (min-width: 34rem)')).toBeGreaterThan(
+      layout.indexOf('.nav-links {')
+    );
+  });
+
+  it('shows exactly one of the two at any width', () => {
+    // Both sets are in the markup and CSS decides which one exists: `display:
+    // none` takes the hidden one out of the accessibility tree entirely, so
+    // nothing is announced twice. Narrow is the base state — menu shown, wide
+    // list hidden — and the breakpoint swaps them.
+    const layout = readFileSync(
+      join(process.cwd(), 'src', 'components', 'Layout.astro'),
+      'utf-8'
+    );
+
+    expect(ruleBody(layout, '.nav-links'), 'the wide list must start hidden').toContain(
+      'display: none'
+    );
+    expect(ruleBody(layout, '.nav-menu'), 'the menu is the narrow default').toContain(
+      'display: block'
+    );
+
+    // The block by balanced braces, and each rule inside it read on its own:
+    // slicing on a literal `'}\n      }'` depends on the indentation, and a
+    // single pattern spanning both rules would be satisfied by a `display:
+    // flex` belonging to neither.
+    const wide = ruleBody(layout, '@media (min-width: 34rem)');
+    expect(ruleBody(wide, '.nav-links'), 'the wide list appears').toContain('display: flex');
+    expect(ruleBody(wide, '.nav-menu'), 'the menu disappears').toContain('display: none');
   });
 });

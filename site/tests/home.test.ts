@@ -55,12 +55,17 @@ describe('one way in', () => {
     expect(beforeList.match(/href="\/buscar"/g) ?? []).toHaveLength(0);
   });
 
-  it('links to the browse page exactly once, and that once is the nav', () => {
+  it('does not repeat the browse link inside the page body', () => {
     // It appeared twice: in the nav and again as a paragraph under the strip.
     // Counting inside <main> could never see the nav — which sits above it — so
-    // the guard passed while the duplicate shipped. Count the whole page.
-    expect(html.match(/href="\/documentos"/g) ?? []).toHaveLength(1);
+    // the guard passed while the duplicate shipped.
+    //
+    // The header itself now carries the link twice by design: a row on a wide
+    // screen and a `<details>` menu on a phone, with CSS showing exactly one.
+    // What must not come back is a third copy in the body.
     expect(main.match(/href="\/documentos"/g) ?? []).toHaveLength(0);
+    const header = markupBetween(html, '<header', '</header>');
+    expect(header.match(/href="\/documentos"/g) ?? [], 'the two presentations').toHaveLength(2);
     // The strip's own rows are not duplicates: each goes to one year's anchor.
     expect((main.match(/href="\/documentos#anio-/g) ?? []).length).toBeGreaterThan(10);
   });

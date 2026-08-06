@@ -132,7 +132,10 @@ describe('detail page sections that had no page-level test', () => {
     // tolerates whatever the chrome contributes — the heading, the summary and
     // the entity escaping came to about 50 characters of slack, which is 50
     // characters of body that could vanish with the test still green.
-    const start = html.indexOf('<summary');
+    // The document's own disclosure, not the header menu's: both are
+    // `<details>`, and the page now carries two.
+    const start = html.indexOf('Ver texto completo');
+    expect(start, 'the large-text disclosure is missing').toBeGreaterThan(-1);
     const rendered = html
       .slice(html.indexOf('</summary>', start) + '</summary>'.length, html.indexOf('</details>', start))
       .replace(/<[^>]*>/g, '')
