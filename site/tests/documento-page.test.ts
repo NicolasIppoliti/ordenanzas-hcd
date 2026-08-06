@@ -162,3 +162,58 @@ describe('detail page related section', () => {
     expect(html).not.toContain('Ordenanzas relacionadas');
   });
 });
+
+describe('a document that a phone can actually read', () => {
+  it('breaks the tokens PDF extraction leaves unbreakable', () => {
+    // The fiscal ordinance's index is written with dot leaders:
+    // `industria...............................................54` is ONE token,
+    // 122 characters long. Fourteen documents carry a token over 40 characters,
+    // and with `overflow-wrap: normal` each of them pushes the page sideways on a
+    // phone — the reader gets horizontal scroll on a document that is otherwise
+    // a single column of prose.
+    //
+    // The plain-text fallback had this from the start; the article renderer and
+    // the letterhead paragraph did not, which is why it survived the redesign.
+    const component = readFileSync(
+      join(process.cwd(), 'src', 'components', 'DocumentText.astro'),
+      'utf-8'
+    );
+
+    // A source-level guard, and it says so: this suite has no layout engine, so
+    // it cannot measure a scroll width. What it can do is pin the declarations
+    // the layout depends on, including the one that is easy to leave out.
+    //
+    // Layout verified by hand against the built site, and the numbers recorded
+    // so the next reader does not have to repeat it: document `3194`, whose
+    // article body carries a 114-character token, at a 548px viewport — the
+    // narrowest at which the two-column grid still applies — resolves to
+    // 96px + 408px with a document scroll width of 548. Before the fix the
+    // fiscal ordinance measured 468px of scroll inside a 320px viewport.
+    for (const selector of ['.doc-preamble', '.articles dd', '.doc-text']) {
+      const rule = component.slice(component.indexOf(`${selector} {`));
+      expect(rule.slice(0, rule.indexOf('}')), `${selector} lets a long token overflow`).toContain(
+        'overflow-wrap'
+      );
+    }
+
+    // `.articles dd` is a grid item, so its automatic minimum size is its
+    // min-content width, and the spec does not count `overflow-wrap`'s break
+    // opportunities towards min-content. Chromium breaks it anyway; this makes
+    // the fix independent of that.
+    const ddRule = component.slice(component.indexOf('.articles dd {'));
+    expect(ddRule.slice(0, ddRule.indexOf('}'))).toContain('min-width: 0');
+  });
+
+  it('has fourteen documents that need it', () => {
+    // Measured, so the rule above is not defended by a story.
+    const dir = join(process.cwd(), '..', 'data', 'documents');
+    const withLongTokens = readdirSync(dir)
+      .filter((file) => file.endsWith('.json'))
+      .filter((file) => {
+        const { text } = JSON.parse(readFileSync(join(dir, file), 'utf-8')) as { text: string };
+        return text.split(/\s+/).some((word) => word.length > 40);
+      });
+
+    expect(withLongTokens).toHaveLength(14);
+  });
+});

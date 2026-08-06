@@ -73,6 +73,21 @@ const parsed = parseArticles(text);
     margin: 0;
     max-width: var(--measure);
     line-height: var(--leading-prose);
+    /* PDF extraction writes index entries as one token:
+       `industria.....................54` runs to 122 characters in the fiscal
+       ordinance, and fourteen documents carry one over forty inside an article
+       body. Without this each of them pushes a phone sideways.
+
+       `min-width: 0` alongside it because this is a grid item: its automatic
+       minimum size is its min-content width, and the spec does not count the
+       break opportunities `overflow-wrap` introduces towards min-content.
+       Chromium breaks the token anyway — measured on `3194`, whose article
+       carries a 114-character token: at a 548px viewport the two-column grid
+       resolves to 96px + 408px and the page does not scroll. The zero makes
+       that independent of the engine agreeing. */
+    overflow-wrap: break-word;
+    min-width: 0;
+    hyphens: auto;
   }
   /* The letterhead every document repeats. Present, because removing it would edit
      the transcript, but set quietly — it is the same text on all 1,038 pages. */
@@ -81,6 +96,10 @@ const parsed = parseArticles(text);
     font-size: var(--text-sm);
     max-width: var(--measure);
     margin: var(--space-4) 0 0;
+    /* Same reason as the article bodies: the index of a fiscal ordinance lands
+       here, and its dot leaders are unbreakable tokens. */
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
   @media (max-width: 34rem) {
     .articles {

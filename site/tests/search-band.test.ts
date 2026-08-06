@@ -185,3 +185,33 @@ describe('the search page answers a query it was navigated to', () => {
     expect(source).toContain("params.get('q')");
   });
 });
+
+describe('the header', () => {
+  it('groups the navigation instead of spreading it across the page', async () => {
+    // Three items under `justify-content: space-between` put the brand at one
+    // edge, one link floating in the middle and the last at the other edge —
+    // three things of equal weight and no relationship between them. The links
+    // belong together; the brand does not belong with them.
+    const html = await render(DocumentosPage);
+    const nav = html.slice(html.indexOf('<nav aria-label="Principal"'), html.indexOf('</nav>'));
+    const group = nav.slice(nav.indexOf('nav-links'));
+
+    expect(group).toContain('href="/documentos"');
+    expect(group).toContain('href="/acerca"');
+    expect(nav.slice(0, nav.indexOf('nav-links'))).toContain('site-name');
+  });
+
+  it('does not dress the site name as one more link', async () => {
+    // It is the name of the archive, not a destination competing with the two
+    // beside it. The serif and its weight say so; an underline said the opposite.
+    const layout = readFileSync(
+      join(process.cwd(), 'src', 'components', 'Layout.astro'),
+      'utf-8'
+    );
+    const rule = layout.slice(layout.indexOf('.site-name {'));
+    const body = rule.slice(0, rule.indexOf('}'));
+
+    expect(body).toContain('var(--font-serif)');
+    expect(body).toContain('text-decoration: none');
+  });
+});

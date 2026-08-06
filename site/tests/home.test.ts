@@ -46,6 +46,21 @@ const rows = new Map<string, number>(
   )
 );
 
+/** The body of a CSS rule, found by selector.
+ *
+ * Matched as a pattern, never with `indexOf` on a literal: that demands exactly
+ * one space before the brace, and on `.doc-card{` it returns -1, so `slice(-1)`
+ * hands back the last character of the file and the assertion blames a missing
+ * declaration for a selector that merely moved. This file learned that once and
+ * then repeated the literal form in five more places. */
+function ruleBody(source: string, selector: string): string {
+  const pattern = new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{`);
+  const start = source.search(pattern);
+  if (start === -1) throw new Error(`no rule for ${selector}`);
+  const rest = source.slice(start);
+  return rest.slice(rest.indexOf('{') + 1, rest.indexOf('}'));
+}
+
 describe('one way in', () => {
   it('offers a single search entry above the recent documents', () => {
     // The header band is the search. A second "Buscar en 1.038 documentos" link
@@ -82,8 +97,7 @@ describe('the recent documents are styled, not just marked up', () => {
 
   it('removes the browser default bullets', () => {
     const page = readFileSync(join(process.cwd(), 'src', 'pages', 'index.astro'), 'utf-8');
-    const rule = page.slice(page.indexOf('.doc-list {'));
-    expect(rule.slice(0, rule.indexOf('}'))).toContain('list-style: none');
+    expect(ruleBody(page, '.doc-list')).toContain('list-style: none');
   });
 
   it('gives the ordinance number its own column, as the detail page does', () => {
@@ -91,6 +105,14 @@ describe('the recent documents are styled, not just marked up', () => {
     // tabular column is what lets someone scan 4449 against 4454 at a glance —
     // the same treatment the article renderer already uses.
     const card = readFileSync(join(process.cwd(), 'src', 'components', 'DocCard.astro'), 'utf-8');
+    // The column, not just the figures: `tabular-nums` anywhere in the file
+    // stayed green with the grid deleted, and a number reflowed inline is the
+    // defect this test was written against.
+    // Matched as a pattern, like the two assertions above: `indexOf` on a
+    // literal demands exactly one space, and on `.doc-card{` it returns -1,
+    // which slices to the last character and reports a missing grid where the
+    // selector is what moved.
+    expect(ruleBody(card, '.doc-card')).toContain('grid-template-columns');
     expect(card).toContain('tabular-nums');
   });
 
@@ -132,8 +154,7 @@ describe('the year strip states what is in the archive', () => {
       join(process.cwd(), 'src', 'components', 'YearStrip.astro'),
       'utf-8'
     );
-    const rule = component.slice(component.indexOf('.fill {'));
-    expect(rule.slice(0, rule.indexOf('}'))).toContain('min-width');
+    expect(ruleBody(component, '.fill')).toContain('min-width');
   });
 
   it('fits the undated label on one line', () => {
@@ -318,15 +339,27 @@ describe('the one figure the manifest cannot answer', () => {
       join(process.cwd(), '..', '.github', 'workflows', 'sync-and-deploy.yml'),
       'utf-8'
     );
-    const cron = /cron:\s*["']([^"']+)["']/.exec(workflow)?.[1] ?? '';
-    const [minute, hour, dayOfMonth, month, dayOfWeek] = cron.split(/\s+/);
+    // EVERY cron, not the first: GitHub accepts a list under `schedule:`, and a
+    // second daily entry would leave this guard green on the weekly one while
+    // the page kept claiming a cadence that no longer describes the workflow.
+    const crons = [...workflow.matchAll(/cron:\s*["']([^"']+)["']/g)].map((m) => m[1] ?? '');
+    expect(crons, 'no cron in the sync workflow').not.toEqual([]);
+    expect(crons, 'more than one schedule; "Semanal" describes only one').toHaveLength(1);
 
-    expect(cron, 'no cron in the sync workflow').not.toBe('');
+    const cron = crons[0] ?? '';
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = cron.split(/\s+/);
     expect(main, 'the band claims a weekly cadence').toContain('Semanal');
     // Weekly means: a fixed day of the week, every month, every day-of-month.
     expect(dayOfMonth).toBe('*');
     expect(month).toBe('*');
-    expect(dayOfWeek, `runs on "${dayOfWeek}", which is not a single weekday`).toMatch(/^[0-6]$/);
+    // Cron accepts 0-7 for the day of the week — 0 and 7 both mean Sunday — and
+    // the three-letter names. A guard that only knew 0-6 would have failed a
+    // schedule that is perfectly weekly, which is the shape of the four rules
+    // this project has already had to loosen after they rejected real data.
+    expect(
+      dayOfWeek,
+      `runs on "${dayOfWeek}", which is not a single weekday`
+    ).toMatch(/^([0-7]|MON|TUE|WED|THU|FRI|SAT|SUN)$/i);
     expect(minute).toMatch(/^\d+$/);
     expect(hour).toMatch(/^\d+$/);
   });
@@ -341,7 +374,55 @@ describe('the chip word and its count are two things', () => {
       join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
       'utf-8'
     );
-    const rule = hero.slice(hero.indexOf('.shortcuts a {'));
-    expect(rule.slice(0, rule.indexOf('}'))).toContain('gap:');
+    expect(ruleBody(hero, '.shortcuts a')).toContain('gap:');
+  });
+});
+
+describe('the two surfaces the owner saw break', () => {
+  it('gives the numbers band padding on both axes', () => {
+    // It had `padding: 24px 0`, so the first figure started flush against the
+    // surface's own edge and read as clipped — which is how it was reported.
+    // Source-level: this suite has no layout engine, and the band's rule is
+    // scoped so it never reaches the container's output.
+    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'index.astro'), 'utf-8');
+    const body = ruleBody(page, '.stats');
+
+    // What matters is that the inline axis is not zero, not which spelling gets
+    // there. Pinning the symmetric shorthand would have rejected
+    // `padding: var(--space-6) var(--space-8)` — two real axes — which is the
+    // shape of every hardening rule this project has had to loosen after it
+    // rejected something valid.
+    // No trailing `;` required: it is optional on the last declaration of a
+    // rule, and demanding it would fail on valid CSS — the shape of every
+    // hardening rule this project has had to loosen.
+    const padding = /padding:\s*([^;}]+)/.exec(body)?.[1]?.trim() ?? '';
+    const inline = /padding-inline:\s*([^;}]+)/.exec(body)?.[1]?.trim() ?? '';
+    const inlineFromShorthand = padding.split(/\s+/)[1] ?? padding.split(/\s+/)[0] ?? '';
+
+    expect(padding || inline, 'the band has no padding at all').not.toBe('');
+    expect(inline || inlineFromShorthand, 'block-only padding is what clipped it').not.toMatch(
+      /^0(px|rem|%)?$/
+    );
+    // Nothing more to assert here: `body` is sliced up to the rule's closing
+    // brace, so a pattern anchored on `}` could never match — an assertion that
+    // reads as a guard and guards nothing. Block-only padding is already caught
+    // above, where the inline axis has to be non-zero.
+  });
+
+  it('steps the hero down where 40px stops fitting', () => {
+    // At 390px the headline ran to five lines and pushed the search field it
+    // exists to introduce below the fold.
+    const hero = readFileSync(
+      join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
+      'utf-8'
+    );
+    // Scoped to the rule itself, the way the sibling assertions in this file
+    // are: an earlier version sliced to `indexOf('.big-search')`, which is -1
+    // inside this media query, so the bounds collapsed and it read the whole
+    // tail — the exact shape this file warns about twice.
+    const query = hero.slice(hero.search(/@media\s*\(max-width:\s*34rem\)/));
+
+    expect(query).toContain('.hero h1');
+    expect(ruleBody(query, '.hero h1')).toContain('var(--text-2xl)');
   });
 });
