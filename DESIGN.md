@@ -132,7 +132,6 @@ WCAG 1.4.11's 3:1. It is now 3.59:1 and 4.76:1.
   thing that must: the phone menu's panel, which drops below the header over the page. It
   separates itself with a surface fill and a rule rather than a shadow — shipping shadow tokens
   no other component consumes is how a system starts to rot.
-  Shipping shadow tokens no component consumes is how a system starts to rot.
 
 ## Composition and voice
 
