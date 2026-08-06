@@ -19,6 +19,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
 import DocumentosPage from '../src/pages/documentos.astro';
 import { getDocuments } from '../src/lib/data';
+import { documentHref } from '../src/lib/labels';
 
 describe('browse-by-year page', () => {
   it('lists every document in the archive exactly once', async () => {
@@ -30,7 +31,10 @@ describe('browse-by-year page', () => {
 
     expect(documents.length).toBe(1038);
     for (const doc of documents) {
-      const href = `href="/documento/${doc.doc_id}"`;
+      // Through the same helper the pages use: `doc_id` is percent-encoded in a
+      // URL, and one id carries a `°`. Asserting the raw string would have
+      // demanded the defect this encoding fixes.
+      const href = `href="${documentHref(doc.doc_id)}"`;
       expect(page.split(href).length - 1, `${doc.doc_id} appeared ${page.split(href).length - 1} times`).toBe(1);
     }
   });
@@ -85,7 +89,7 @@ describe('browse-by-year page', () => {
 
   it('is reachable from the main navigation on every page', async () => {
     // A browse page nobody can find is a browse page that does not exist. The
-    // nav is the only chrome that appears on all 1,042 pages.
+    // nav is the only chrome that appears on all 1,043 built pages.
     const container = await AstroContainer.create();
     const page = await container.renderToString(DocumentosPage, {});
     const nav = page.slice(page.indexOf('<nav aria-label="Principal"'));
@@ -111,5 +115,19 @@ describe('browse-by-year page', () => {
     const container = await AstroContainer.create();
     const page = await container.renderToString(DocumentosPage, {});
     expect(page).toContain('<div class="browse" data-pagefind-ignore');
+  });
+});
+
+describe('the serif never gets asked for a weight it does not carry', () => {
+  it('sets the sans face on the count that lives inside the year heading', () => {
+    // `.count` is a span inside the h2, so it inherits Fraunces — which ships at
+    // one weight, 600. Asking it for 400 does not fail: the browser synthesises
+    // the weight by thinning the outlines, on the numbers a reader scans. No
+    // rendering test can see that, which is why the rule is asserted here.
+    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'documentos.astro'), 'utf-8');
+    const rule = page.slice(page.indexOf('.count {'));
+    const body = rule.slice(0, rule.indexOf('}'));
+
+    expect(body).toContain('var(--font-sans)');
   });
 });

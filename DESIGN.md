@@ -1,8 +1,9 @@
 # Design System — Archivo de Ordenanzas del HCD
 
 Source of truth for every visual decision in `site/`. Read it before changing anything
-that renders. The current implementation predates this document and does not yet match
-it — see "Implementation gap" at the end.
+that renders. The site now implements it: the five adoption items are all shipped, so a
+mismatch between this document and what renders is a defect in one of the two, not
+expected drift. See "Implementation gap" at the end for what landed when.
 
 ## Product Context
 
@@ -50,10 +51,14 @@ face, which reads as "typography was not considered."
 - **Body / UI / metadata:** **Instrument Sans**. Legible at small sizes, holds up on a
   phone, not on anyone's overused list.
 - **Data / numbers:** Instrument Sans with `font-variant-numeric: tabular-nums`, so
-  ordinance numbers, years and expedientes align in columns.
+  ordinance numbers, years and expedientes align in columns. The shipped subset keeps the
+  `tnum` feature — without it the declaration is a silent no-op, which is what happened
+  until it was measured. **Exception:** the home's display figures (the numbers band and the
+  fact cards) are set in the serif and carry no tabular declaration. There is one figure per
+  cell and nothing to align with, and Fraunces has no `tnum` at all, even upstream.
 - **Code:** `ui-monospace` system stack. Used only in developer surfaces.
 - **Loading:** self-hosted, subset to Latin. Measured after subsetting: Fraunces 18,504
-  bytes, Instrument Sans 27,152 — **45,656 total**, cached once across all 1,043 pages.
+  bytes, Instrument Sans 28,504 — **47,008 total**, cached once across all 1,043 pages.
   This does NOT breach zero-variable-cost: Cloudflare Pages bandwidth is unmetered, and
   the constraint was always about the bill, not about bytes.
 - **Fraunces ships at one weight (600), not as a variable range.** Keeping 400–700 costs
@@ -69,6 +74,7 @@ dashboard):
 
 | Token | Size | Use |
 |---|---|---|
+| `--text-3xl` | 40px | home hero, and nothing else |
 | `--text-2xl` | 30px | page title |
 | `--text-xl` | 24px | section title |
 | `--text-lg` | 20px | lead, result title |
@@ -76,7 +82,11 @@ dashboard):
 | `--text-sm` | 15px | secondary, metadata |
 | `--text-xs` | 13px | labels |
 
-Line height: 1.15 headings · 1.5 UI · 1.65 document prose. Measure capped at 68ch.
+Line height: **1.25** headings · 1.5 UI · 1.65 document prose. The heading value is not the
+1.15 a display face usually takes: headings here are document titles that run to a full
+sentence, and at 1.15 the descenders of one line meet the ascenders of the next. Pinned by
+`tokens.test.ts` against this table, because a leading written down beside a token is a
+leading nobody measured. Measure capped at 68ch.
 
 ## Color
 
@@ -127,11 +137,38 @@ The first five gap items changed type, colour and features. They never touched c
 and the result read as unfinished with every token correct — new skin on the same austere
 structure. This section exists so that gap cannot reopen.
 
-**The home answers two questions, in this order.** "What can I do here", then "what is in
-here". One search entry above the fold — the header band, and nothing competing with it. Then
-the year strip, which is the only place on the site that says how much there is and from when.
-Then the most recent documents. A second link to a destination the nav already reaches is a
-defect, not a convenience.
+**The home is a landing and an index at once.** It has to make a reader want to stay and give
+them somewhere to go on the same screen, and it answers three questions in order: what can I do
+here, how big is this, and what is in it. Search is the hero there — it is the one page where
+search IS the point, so the header band hides itself rather than shipping a second field with
+the same id. Then the numbers band, the year strip, three measured facts, and the newest
+documents. A second link to a destination the nav already reaches is a defect, not a
+convenience.
+
+**Everything that invites is a measured fact.** The shortcut chips carry the count of documents
+that MENTION a word — "documentos que mencionan obras", never "ordenanzas de obras", because a
+count is a fact and a category is a classification nobody made. The fact cards are counts and
+extremes, never a chosen document: the moment the archive features "the ordinance you should
+read", it stops being a transcript and becomes an opinion. Where a fact ties, both sides are
+named — 2002 and 2012 each hold one document, and calling either "the quietest year" would be a
+claim the data does not make.
+
+**The shortcut list is chosen, and it carries its rule.** A term earns a place if it names a
+matter a municipality legislates on, at least 40 documents mention it, and it is worded as a
+search. Ranking the corpus by frequency instead — the apparently neutral option — returns the
+letterhead every document repeats: rosales, concejo, deliberante, comuníquese, regístrese,
+archívese, and the contact gmail. That list is neutral and useless. The rule and the reason for
+each term live beside the list in `lib/highlights.ts`, so the selection can be audited rather
+than defended.
+
+**The year strip states proportion, and states it honestly.** Each year is a bar whose width
+is relative to the LARGEST ROW — which is the undated group at 223, not the fullest year — so
+every bar on screen is comparable to every other one. Scaling to the fullest year instead would
+push the undated bar past 100% or clip it, and that group is a fact about the archive, not an
+exception to it. A year holding one document gets a floored 3px of bar: at true proportion it
+would be under a pixel and read as zero, and zero is a different claim from one. That floor
+overstates the smallest years, and it is the one place on the site where a mark is not to
+scale — stated here rather than left in a component comment.
 
 **Lists are columns, not bullets.** Every document row hangs its number in a tabular column
 and sets the title in the serif, the same treatment the article renderer gives article
@@ -183,7 +220,12 @@ number — they know roughly when. Search demands you know what to type; browsin
   from a regex over a title, so stating a legal relationship would assert something the
   source does not. This is a provenance decision, not a missing feature.
 - **No Fragua branding** beyond a discreet footer credit. No header brand, no logo.
-- **No editorial layer** of any kind: no summaries, no rankings, no highlighting.
+- **No editorial layer over the CONTENT**: no summaries, no rankings, no highlighting, and
+  never a featured document. The boundary is between content and navigation: offering a search
+  for a word, with the measured count of documents that mention it, is a route into the archive
+  and states a fact about it. Saying which ordinance matters, or ordering documents by anything
+  other than what the source stated, is an opinion. The shortcut list under Composition and
+  voice sits on the navigation side of that line, and carries the rule that admitted each term.
 
 ## Implementation gap
 
@@ -211,6 +253,8 @@ carries a `<noscript>` saying so and pointing at the browse page, which needs no
 | 2026-08-05 | Initial design system | Created by /design-consultation after visual research of legislation.gov.uk and argentina.gob.ar, against a live site the owner judged unfinished, poorly ordered, cheap-looking, and unclear on the home page |
 | 2026-08-05 | Webfonts allowed | The no-webfont rule was inferred from "mobile payload", not stated in BRIEF.md. Two subset variable families cost ~45 KB cached once, on unmetered bandwidth. It was over-strict, and it was the main reason the site read as unfinished |
 | 2026-08-05 | Warm paper over white | Distinguishes a document archive from a dashboard, and serves civic warmth without any politically-coded colour |
+| 2026-08-05 | Landing and index in one screen | The owner asked for a page that invites you to stay, explicitly over the formality of legislation.gov.uk and the Boletín Oficial. Formality was mine to trade; neutrality and no-fabrication were not, so every invitation on the page is a measured fact |
+| 2026-08-05 | Shortcut terms chosen, not calculated | Measured: ranking by frequency returns only letterhead — rosales, concejo, comuníquese, archívese, gmail. Neutral and useless. The chosen list ships with a written admission rule instead |
 | 2026-08-05 | Composition and voice written down | Five gap items shipped tokens and features and left the structure of 2010 underneath; the owner read the result as not intuitive and not modern, and he was right |
 | 2026-08-05 | Warm and direct, never a villain | The full marketing register got its energy from an enemy, and the only enemy available was the HCD — the client, and the body whose tolerance this unofficial archive depends on |
 | 2026-08-05 | Contrast asserted by computation, not by table | The written floors (5.84 / 8.55) were both wrong once the palette changed, and the form-control boundary had never cleared 3:1 at all |

@@ -7,7 +7,12 @@ import Layout from '../../components/Layout.astro';
 import type { ManifestDocument, Status } from '../../lib/contract';
 import { getDocuments, loadDocumentBody } from '../../lib/data';
 import { buildRelatedIndex, type RelatedTarget } from '../../lib/related';
-import { DOC_TYPE_LABELS, formatDocHeading, formatDocIdentifier } from '../../lib/labels';
+import {
+  DOC_TYPE_LABELS,
+  documentHref,
+  formatDocHeading,
+  formatDocIdentifier,
+} from '../../lib/labels';
 import { getAnioFilterValue, getTextoFilterValue, getTipoFilterValue } from '../../lib/search';
 
 export async function getStaticPaths() {
@@ -134,7 +139,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
           <ul>
             {siblings.map((sibling) => (
               <li>
-                <a href={`/documento/${sibling.doc_id}`}>{formatDocHeading(sibling)}</a>
+                <a href={documentHref(sibling.doc_id)}>{formatDocHeading(sibling)}</a>
               </li>
             ))}
           </ul>
@@ -171,7 +176,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
           <ul>
             {related.map((target) => (
               <li>
-                <a href={`/documento/${target.doc_id}`}>{formatDocHeading(target)}</a>
+                <a href={documentHref(target.doc_id)}>{formatDocHeading(target)}</a>
               </li>
             ))}
           </ul>
@@ -225,7 +230,7 @@ const isLargeText = text !== null && text.length > LARGE_TEXT_THRESHOLD;
     gap: var(--space-2);
   }
 
-  /* The nine documents over 50 KB of extracted text. The full body stays in the DOM so
+  /* The nine documents over 50,000 characters of extracted text. The full body stays in the DOM so
      Pagefind indexes it — collapsing is about not dropping a reader into 207
      pages unannounced, not about shipping fewer bytes. */
   details {

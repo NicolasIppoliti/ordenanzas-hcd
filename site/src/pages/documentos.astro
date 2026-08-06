@@ -20,7 +20,7 @@
 import Layout from '../components/Layout.astro';
 import { getDocuments } from '../lib/data';
 import { groupByYear } from '../lib/browse';
-import { formatDocHeading } from '../lib/labels';
+import { documentHref, formatDocHeading } from '../lib/labels';
 import { getAnioFilterValue } from '../lib/search';
 
 const documents = getDocuments();
@@ -59,7 +59,7 @@ const undatedLabel = getAnioFilterValue(null);
           <ul>
             {group.map((doc) => (
               <li>
-                <a href={`/documento/${doc.doc_id}`}>{formatDocHeading(doc)}</a>
+                <a href={documentHref(doc.doc_id)}>{formatDocHeading(doc)}</a>
               </li>
             ))}
           </ul>
@@ -79,7 +79,7 @@ const undatedLabel = getAnioFilterValue(null);
       <ul>
         {undated.map((doc) => (
           <li>
-            <a href={`/documento/${doc.doc_id}`}>{formatDocHeading(doc)}</a>
+            <a href={documentHref(doc.doc_id)}>{formatDocHeading(doc)}</a>
           </li>
         ))}
       </ul>
@@ -116,14 +116,20 @@ const undatedLabel = getAnioFilterValue(null);
        underneath it. Clears the bar's own height plus a line of breathing room. */
     scroll-margin-top: var(--space-16);
     font-size: var(--text-xl);
-    font-variant-numeric: tabular-nums;
     margin: 0 0 var(--space-3);
     padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--border);
   }
   /* The count is a fact about the group, not part of its name — it reads as
-     metadata beside the year rather than competing with it. */
+     metadata beside the year rather than competing with it.
+     
+     `font-family` is set explicitly because this span lives INSIDE the h2 and
+     would otherwise inherit Fraunces, which ships at one weight (600). Asking it
+     for 400 does not fail; the browser synthesises a fake 400 by thinning the
+     outlines, and no test can see it. Instrument Sans carries 400–700 for real,
+     and metadata belongs to the sans face anyway. */
   .count {
+    font-family: var(--font-sans);
     font-size: var(--text-sm);
     font-weight: var(--weight-normal);
     color: var(--text-muted);
@@ -140,8 +146,9 @@ const undatedLabel = getAnioFilterValue(null);
   .browse li + li {
     border-top: 1px solid var(--border);
   }
+  /* `.muted` itself is global, in Layout's stylesheet. Only the measure is
+     local, because it is this page's paragraph that needs it. */
   .muted {
-    color: var(--text-muted);
     max-width: var(--measure);
   }
 </style>

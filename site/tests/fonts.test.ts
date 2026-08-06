@@ -8,7 +8,7 @@
 // Self-hosted rather than served from a third party: a font CDN is a request to
 // a domain the archive does not control, on every page, for a site whose whole
 // premise is that it costs nothing and depends on nobody.
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -19,13 +19,15 @@ describe('self-hosted fonts', () => {
   it('ships both families, subset to Latin, within the stated budget', () => {
     // DESIGN.md budgets roughly 45 KB for both, cached once across 1,043 pages.
     // Measured after subsetting to the Latin range and restricting the axes:
-    // Fraunces 18,504 bytes, Instrument Sans 27,152 — 45,656 together.
+    // Fraunces 18,504 bytes, Instrument Sans 28,504 — 47,008 together. The sans
+    // carries `tnum`, without which every tabular column on the site is a
+    // no-op; it costs 1,352 bytes and the design document asks for it by name.
     const fraunces = statSync(join(FONT_DIR, 'fraunces-latin.woff2')).size;
     const instrument = statSync(join(FONT_DIR, 'instrument-sans-latin.woff2')).size;
 
     expect(fraunces).toBe(18_504);
-    expect(instrument).toBe(27_152);
-    expect(fraunces + instrument).toBeLessThanOrEqual(46_000);
+    expect(instrument).toBe(28_504);
+    expect(fraunces + instrument).toBeLessThanOrEqual(48_000);
   });
 
   it('ships the OFL licence for each family', () => {
@@ -102,5 +104,53 @@ describe('the faces where they are used', () => {
     expect(layout).toContain('rel="preload"');
     expect(layout).toContain('/fonts/fraunces-latin.woff2');
     expect(layout).toContain('/fonts/instrument-sans-latin.woff2');
+  });
+});
+
+describe('the features the type tokens depend on', () => {
+  it('does not ask the serif for a feature it has never had', () => {
+    // `font-variant-numeric: tabular-nums` does nothing unless the font carries
+    // `tnum`. Fraunces carries none — not in the subset, not upstream — so the
+    // declaration on a serif element reads as a measured decision and is a
+    // no-op. The sans does carry it, but only because the subset was rebuilt to
+    // keep it: the first build dropped the feature, and every column on the site
+    // had been asking for an alignment that never happened.
+    //
+    // Verified with fonttools, which is the only thing that can read a compressed
+    // woff2's feature table:
+    //   fonttools ttx -t GSUB -o - site/public/fonts/instrument-sans-latin.woff2 | grep tnum
+    // The 1,352-byte difference between the two subsets is what that feature costs,
+    // and the byte counts above are what pin it.
+    // Every source file, not a list: the first version of this guard named two
+    // and missed `documentos.astro`, whose year headings inherit the serif from
+    // Layout's global rule and asked for tabular figures anyway.
+    const sources = readdirSync(join(process.cwd(), 'src'), { recursive: true }) as string[];
+    const rendered = sources.filter((file) => file.endsWith('.astro'));
+    expect(rendered.length, 'no components found to check').toBeGreaterThan(5);
+
+    for (const file of rendered) {
+      const source = readFileSync(join(process.cwd(), 'src', file), 'utf-8');
+      // Every rule block that sets the serif, and every heading rule — headings
+      // are serif site-wide, from Layout's global stylesheet.
+      for (const block of source.match(/\{[^{}]*\}/g) ?? []) {
+        if (!block.includes('var(--font-serif)')) continue;
+        expect(block, `${file} asks the serif for tabular figures`).not.toContain('tabular-nums');
+      }
+      const headingRules = [...source.matchAll(/h[123][^{]*\{([^{}]*)\}/g)];
+      for (const [, block] of headingRules) {
+        expect(block ?? '', `${file} asks a heading for tabular figures`).not.toContain(
+          'tabular-nums'
+        );
+      }
+    }
+  });
+
+  it('keeps tabular figures where columns actually line up', () => {
+    // The sans is where DESIGN.md puts data, and these are the surfaces that
+    // align numbers in a column.
+    for (const file of ['components/YearStrip.astro', 'components/DocCard.astro']) {
+      const source = readFileSync(join(process.cwd(), 'src', file), 'utf-8');
+      expect(source, `${file} sets no tabular figures`).toContain('tabular-nums');
+    }
   });
 });

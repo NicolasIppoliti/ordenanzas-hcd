@@ -1,4 +1,4 @@
-// DESIGN.md implementation gap, item 2: warm paper instead of white, and every
+// DESIGN.md implementation gap, item 4: warm paper instead of white, and every
 // contrast pair re-measured.
 //
 // Risk 1 in DESIGN.md: every civic site is white-and-blue. Warm paper costs a
@@ -79,6 +79,11 @@ describe('contrast, computed rather than claimed', () => {
     ['--link', '--bg-surface', 'a link on a surface'],
     ['--link-hover', '--bg', 'a hovered link'],
     ['--notice-text', '--notice-bg', 'the stale-archive notice'],
+    // Paper on the accent fill: the search buttons, in both states. A filled
+    // button is text on a colour like any other pair, and this one shipped
+    // unmeasured because the list enumerated links but not fills.
+    ['--bg', '--link', 'a filled button'],
+    ['--bg', '--link-hover', 'a hovered filled button'],
   ];
 
   for (const [theme, scope] of [
@@ -97,12 +102,37 @@ describe('contrast, computed rather than claimed', () => {
     it(`focus and rules clear 3:1 in ${theme}`, () => {
       // Non-text contrast: WCAG 1.4.11. A focus ring nobody can see is the same
       // as no focus ring, and this site is navigable by keyboard only.
+      // `--border` is deliberately NOT here. It draws separators and card
+      // edges, and WCAG 1.4.11 asks 3:1 of what identifies a control or its
+      // state — not of a hairline between two rows. Measured at 1.35:1 light
+      // and 1.43:1 dark, which is the point: a rule you notice without reading
+      // it. What the bar needs is measured in the next test, where the fill has
+      // to be distinguishable from the track it sits in.
       for (const token of ['--focus', '--border-strong']) {
         const ratio = contrast(resolve(token, scope), resolve('--bg', scope));
         expect(ratio, `${token} in ${theme} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
       }
     });
   }
+
+  it('computes the ratios that other files write down', () => {
+    // Five figures are quoted in comments and in DESIGN.md. A ratio written
+    // beside a colour is a ratio nobody measured, which is this file's whole
+    // premise — so the quoted ones are computed here too.
+    const at = (fg: string, bg: string, scope: string) =>
+      Number(contrast(resolve(fg, scope), resolve(bg, scope)).toFixed(2));
+
+    expect(at('--border-strong', '--bg', LIGHT), 'DESIGN.md quotes 3.59').toBe(3.59);
+    expect(at('--border-strong', '--bg', DARK_SCOPE), 'DESIGN.md quotes 4.76').toBe(4.76);
+    expect(at('--text-muted', '--bg', LIGHT), 'SearchBand quotes 6.45').toBe(6.45);
+    expect(at('--text-muted', '--bg', DARK_SCOPE), 'SearchBand quotes 6.67').toBe(6.67);
+    // The year-strip bar against its own track. That bar is the site's only
+    // graphic and it encodes proportion, so the filled part has to be
+    // distinguishable from the unfilled one — nothing measured this until now.
+    expect(at('--link', '--border', LIGHT), 'the bar cannot be read against its track')
+      .toBeGreaterThanOrEqual(3);
+    expect(at('--link', '--border', DARK_SCOPE)).toBeGreaterThanOrEqual(3);
+  });
 
   it('records the lowest measured ratio, so a regression is visible in the diff', () => {
     // DESIGN.md quotes the floor for each theme. If a colour changes, this is

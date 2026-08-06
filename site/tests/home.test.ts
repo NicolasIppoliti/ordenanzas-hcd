@@ -23,13 +23,25 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import IndexPage from '../src/pages/index.astro';
 import { getDocuments } from '../src/lib/data';
+import { homeHighlights } from '../src/lib/highlights';
+
+const { shortcuts } = homeHighlights();
 
 const html = await (await AstroContainer.create()).renderToString(IndexPage);
 const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
 
-/** Every year-strip row, as anchor id -> the count it actually renders. */
+/** Every year-strip row, as anchor id -> the count it actually renders.
+ *
+ * Scoped to the strip's own markup, not to <main>: the fact cards link to
+ * `/documentos#anio-…` too, and a lazy match across the whole page would start
+ * reading their numbers the day any `class="count"` appears below them. The
+ * assertion would keep passing while measuring another component. */
+const yearStripMarkup = main.slice(
+  main.indexOf('year-strip'),
+  main.indexOf('</ul>', main.indexOf('year-strip'))
+);
 const rows = new Map<string, number>(
-  [...main.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+  [...yearStripMarkup.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
     (match) => [match[1] ?? '', Number(match[2])]
   )
 );
@@ -116,11 +128,11 @@ describe('the year strip states what is in the archive', () => {
   it('keeps a one-document year visible', () => {
     // 2002 and 2012 hold one each. At true proportion that bar is under a pixel
     // and reads as zero — a different claim from "one". The rule floors it.
-    const strip = readFileSync(
+    const component = readFileSync(
       join(process.cwd(), 'src', 'components', 'YearStrip.astro'),
       'utf-8'
     );
-    const rule = strip.slice(strip.indexOf('.fill {'));
+    const rule = component.slice(component.indexOf('.fill {'));
     expect(rule.slice(0, rule.indexOf('}'))).toContain('min-width');
   });
 
@@ -128,8 +140,7 @@ describe('the year strip states what is in the archive', () => {
     // "Año no determinado" wrapped to two lines in the label column and threw
     // the row out of alignment. The destination heading still carries it in
     // full; this is the compact index.
-    const strip = main.slice(main.indexOf('year-strip'));
-    expect(strip).toContain('Sin año');
+    expect(yearStripMarkup).toContain('Sin año');
   });
 
   it('draws the bars with no script and no image', () => {
@@ -168,9 +179,84 @@ describe('"lo último" is actually the latest', () => {
   });
 });
 
+describe('the landing surfaces', () => {
+  it('puts the search in the hero, not in a strip above it', () => {
+    // The home is the one page where search is the whole point, so it gets a
+    // field a reader cannot miss. The header band hides itself here rather than
+    // duplicating the `q` id its label points at.
+    const hero = main.slice(main.indexOf('<h1'), main.indexOf('</form>'));
+    expect(hero).toContain('name="q"');
+    expect(html.match(/name="q"/g) ?? [], 'exactly one search field on the page').toHaveLength(1);
+    expect(main).toContain('action="/buscar"');
+  });
+
+  it('offers each shortcut as a search, never as a category', () => {
+    // "Documentos que mencionan obras" is a count. "Ordenanzas de obras" would
+    // be a classification nobody made — the same fabrication as an invented
+    // title. The wording is the whole safeguard, so it is pinned.
+    expect(main).toContain('mencionan');
+    expect(main.toLowerCase()).not.toMatch(/ordenanzas de (obras|salud|tránsito)/);
+
+    // Read each chip's count out of its own anchor and compare it to the
+    // measured value. Asking whether the number appears somewhere on the page
+    // would be answered by the year strip, the stats band or a doc_id.
+    // Scoped to the chip list, for the same reason the year-strip map is: a
+    // lazy match across <main> would start reading another component's
+    // `class="count"` the day a chip lost its own.
+    const chips = main.slice(main.indexOf('class="shortcuts"'));
+    const list = chips.slice(0, chips.indexOf('</ul>'));
+    const rendered = new Map(
+      [...list.matchAll(/href="\/buscar\?q=([^"]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+        (match) => [decodeURIComponent(match[1] ?? ''), Number(match[2])]
+      )
+    );
+    expect(rendered.size, 'one chip per shortcut').toBe(shortcuts.length);
+    for (const { query, count } of shortcuts) {
+      expect(rendered.get(query), `${query} chip shows the wrong count`).toBe(count);
+    }
+  });
+
+  it('states only figures it measured', () => {
+    // Every number in the band comes from the corpus, so none of them can go
+    // stale the week the archive grows.
+    const band = main.slice(main.indexOf('class="stats"'));
+    const head = band.slice(0, band.indexOf('</section>'));
+
+    expect(head).toContain('1.038');
+    expect(head).toContain('894');
+    expect(head).toContain('2002');
+    expect(head).toContain('2026');
+  });
+
+  it('opens the archive with facts, not with a chosen document', () => {
+    // The cards are counts and measured extremes. Featuring one ordinance would
+    // be an editorial layer, which this project does not have.
+    expect(main).toContain('207 páginas');
+    expect(main).toContain('/documento/4270-D-138-2023-Fiscal-e-Impositiva-2024');
+    // Scoped to the card: `108` also renders in the year strip, so an unscoped
+    // check stays green with the card blanked — the shape this file warns about
+    // twice already.
+    const cards = main.slice(main.indexOf('class="facts"'));
+    expect(cards.slice(0, cards.indexOf('</ul>')), 'the fullest year, counted').toContain('108');
+  });
+
+  it('ships no JavaScript for any of it', () => {
+    // The bars, the chips and the cards are CSS and links. The only script on
+    // the site is the 268-byte staleness notice.
+    expect((html.match(/<script/g) ?? []).length).toBe(1);
+  });
+});
+
 describe('the copy speaks to a resident without pointing at the source', () => {
-  it('opens with what the reader can do, not with what the system is', () => {
-    expect(main).toContain('Buscá cualquier ordenanza');
+  it('opens by naming the archive, with the search immediately under it', () => {
+    // The headline says what is here; the field and its button say what to do.
+    // Splitting them that way is what lets the h1 stay short enough to read at
+    // 40px on a phone.
+    const h1 = main.slice(main.indexOf('<h1'), main.indexOf('</h1>'));
+    expect(h1).toContain('1.038 documentos del Concejo Deliberante');
+    expect(main.indexOf('name="q"'), 'the field follows the headline').toBeGreaterThan(
+      main.indexOf('</h1>')
+    );
   });
 
   it('never criticises the body that publishes the documents', () => {
@@ -185,14 +271,30 @@ describe('the copy speaks to a resident without pointing at the source', () => {
   it('claims nothing it has not measured', () => {
     // No speed promise, no superlative, no ranking. Every number on the page is
     // a count from the manifest.
-    for (const phrase of ['segundos', 'el mejor', 'la mejor', 'más rápido', 'al instante']) {
+    // Including claims of completeness: this archive holds what the HCD
+    // publishes, which is not every norm in the district, and the sync is
+    // weekly so the set is up to seven days behind by construction. The
+    // headline said "toda la normativa de Coronel Rosales" and this guard was
+    // the reason it survived — it blocklisted superlatives and never scope.
+    for (const phrase of [
+      'segundos',
+      'el mejor',
+      'la mejor',
+      'más rápido',
+      'al instante',
+      'toda la normativa',
+      'todas las normas',
+      'siempre actualizado',
+    ]) {
       expect(main.toLowerCase(), `unmeasured claim: "${phrase}"`).not.toContain(phrase);
     }
   });
 
   it('states the facts that are true and verifiable', () => {
     expect(main).toContain('1.038');
-    expect(main).toContain('gratis');
+    // Case-insensitive: the word opens a sentence now, and the claim is the
+    // word, not its capitalisation.
+    expect(main.toLowerCase()).toContain('gratis');
   });
 
   it('counts documentos, never ordenanzas (D12)', () => {
@@ -202,5 +304,44 @@ describe('the copy speaks to a resident without pointing at the source', () => {
     // count.
     expect(main).toContain('1.038 documentos');
     expect(main).not.toMatch(/1\.038\s+ordenanzas/);
+  });
+});
+
+describe('the one figure the manifest cannot answer', () => {
+  it('says "Semanal" only while the workflow actually runs weekly', () => {
+    // Three cells of the numbers band come from `corpusStats`. This one comes
+    // from the sync workflow's cron, and nothing tied the two: changing the
+    // schedule would have left the home page stating a cadence that no longer
+    // exists — the same shape as the four stale hand-typed figures this project
+    // has already shipped.
+    const workflow = readFileSync(
+      join(process.cwd(), '..', '.github', 'workflows', 'sync-and-deploy.yml'),
+      'utf-8'
+    );
+    const cron = /cron:\s*["']([^"']+)["']/.exec(workflow)?.[1] ?? '';
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = cron.split(/\s+/);
+
+    expect(cron, 'no cron in the sync workflow').not.toBe('');
+    expect(main, 'the band claims a weekly cadence').toContain('Semanal');
+    // Weekly means: a fixed day of the week, every month, every day-of-month.
+    expect(dayOfMonth).toBe('*');
+    expect(month).toBe('*');
+    expect(dayOfWeek, `runs on "${dayOfWeek}", which is not a single weekday`).toMatch(/^[0-6]$/);
+    expect(minute).toMatch(/^\d+$/);
+    expect(hour).toMatch(/^\d+$/);
+  });
+});
+
+describe('the chip word and its count are two things', () => {
+  it('separates them, since the markup does not', () => {
+    // Astro drops the whitespace between `{shortcut.term}` and the count span,
+    // so the chips shipped reading "salud163". No rendering test can see that —
+    // the two nodes are there either way — so the gap is asserted at source.
+    const hero = readFileSync(
+      join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
+      'utf-8'
+    );
+    const rule = hero.slice(hero.indexOf('.shortcuts a {'));
+    expect(rule.slice(0, rule.indexOf('}'))).toContain('gap:');
   });
 });
