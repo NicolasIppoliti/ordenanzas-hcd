@@ -233,7 +233,11 @@ describe('the landing surfaces', () => {
     // be an editorial layer, which this project does not have.
     expect(main).toContain('207 páginas');
     expect(main).toContain('/documento/4270-D-138-2023-Fiscal-e-Impositiva-2024');
-    expect(main, 'the fullest year, counted').toContain('108');
+    // Scoped to the card: `108` also renders in the year strip, so an unscoped
+    // check stays green with the card blanked — the shape this file warns about
+    // twice already.
+    const cards = main.slice(main.indexOf('class="facts"'));
+    expect(cards.slice(0, cards.indexOf('</ul>')), 'the fullest year, counted').toContain('108');
   });
 
   it('ships no JavaScript for any of it', () => {
