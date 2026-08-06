@@ -36,9 +36,12 @@ const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
  * `/documentos#anio-…` too, and a lazy match across the whole page would start
  * reading their numbers the day any `class="count"` appears below them. The
  * assertion would keep passing while measuring another component. */
-const strip = main.slice(main.indexOf('year-strip'), main.indexOf('</ul>', main.indexOf('year-strip')));
+const yearStripMarkup = main.slice(
+  main.indexOf('year-strip'),
+  main.indexOf('</ul>', main.indexOf('year-strip'))
+);
 const rows = new Map<string, number>(
-  [...strip.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+  [...yearStripMarkup.matchAll(/href="\/documentos#(anio-[a-z0-9-]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
     (match) => [match[1] ?? '', Number(match[2])]
   )
 );
@@ -125,11 +128,11 @@ describe('the year strip states what is in the archive', () => {
   it('keeps a one-document year visible', () => {
     // 2002 and 2012 hold one each. At true proportion that bar is under a pixel
     // and reads as zero — a different claim from "one". The rule floors it.
-    const strip = readFileSync(
+    const component = readFileSync(
       join(process.cwd(), 'src', 'components', 'YearStrip.astro'),
       'utf-8'
     );
-    const rule = strip.slice(strip.indexOf('.fill {'));
+    const rule = component.slice(component.indexOf('.fill {'));
     expect(rule.slice(0, rule.indexOf('}'))).toContain('min-width');
   });
 
@@ -137,8 +140,7 @@ describe('the year strip states what is in the archive', () => {
     // "Año no determinado" wrapped to two lines in the label column and threw
     // the row out of alignment. The destination heading still carries it in
     // full; this is the compact index.
-    const strip = main.slice(main.indexOf('year-strip'));
-    expect(strip).toContain('Sin año');
+    expect(yearStripMarkup).toContain('Sin año');
   });
 
   it('draws the bars with no script and no image', () => {

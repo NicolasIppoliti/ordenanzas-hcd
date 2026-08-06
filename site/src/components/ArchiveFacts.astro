@@ -33,8 +33,6 @@ const { years, count } = stats.quietestYears;
 const busiest = stats.busiestYears;
 const busiestListed = listYears(busiest.years);
 const noun = count === 1 ? 'documento' : 'documentos';
-// `join(' y ')` reads correctly for two and turns into "2002 y 2012 y 2015" for
-// three. The tie can grow as well as break: the archive syncs weekly.
 const listed = listYears(years);
 const quietest =
   years.length === 1
