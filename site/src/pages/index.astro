@@ -115,11 +115,14 @@ const recent = [...documents]
 </Layout>
 
 <style>
-  /* The numbers band is the only full-bleed surface on the site. It earns that
-     by being the one thing on the page a reader can take in without reading. */
+  /* The one filled surface on the page. It earns that by being the only thing
+     here a reader takes in without reading — and it stays inside the measure
+     like everything else, so it is a band, not a bleed. */
   .stats {
     margin-top: var(--space-12);
-    padding-block: var(--space-6);
+    /* Inline padding as well as block: without it the first figure starts flush
+       against the surface's own edge and reads as clipped. */
+    padding: var(--space-6);
     border-block: 1px solid var(--border);
     background: var(--bg-surface);
     display: grid;

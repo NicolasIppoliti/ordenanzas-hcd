@@ -345,3 +345,33 @@ describe('the chip word and its count are two things', () => {
     expect(rule.slice(0, rule.indexOf('}'))).toContain('gap:');
   });
 });
+
+describe('the two surfaces the owner saw break', () => {
+  it('gives the numbers band padding on both axes', () => {
+    // It had `padding: 24px 0`, so the first figure started flush against the
+    // surface's own edge and read as clipped — which is how it was reported.
+    // Source-level: this suite has no layout engine, and the band's rule is
+    // scoped so it never reaches the container's output.
+    const page = readFileSync(join(process.cwd(), 'src', 'pages', 'index.astro'), 'utf-8');
+    const rule = page.slice(page.indexOf('.stats {'));
+    const body = rule.slice(0, rule.indexOf('}'));
+
+    expect(body).toMatch(/padding:\s*var\(--space-\d+\);/);
+    expect(body, 'block-only padding is what clipped it').not.toMatch(/padding-block:/);
+  });
+
+  it('steps the hero down where 40px stops fitting', () => {
+    // At 390px the headline ran to five lines and pushed the search field it
+    // exists to introduce below the fold.
+    const hero = readFileSync(
+      join(process.cwd(), 'src', 'components', 'SearchHero.astro'),
+      'utf-8'
+    );
+    const query = hero.slice(hero.indexOf('@media (max-width: 34rem)'));
+
+    expect(query).toContain('.hero h1');
+    expect(query.slice(0, query.indexOf('.big-search') + 1 || undefined)).toContain(
+      'var(--text-2xl)'
+    );
+  });
+});

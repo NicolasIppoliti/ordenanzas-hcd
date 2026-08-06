@@ -137,14 +137,29 @@ const syncStatus = loadSyncStatus();
       nav {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--space-2) var(--space-6);
+        gap: 0 var(--space-6);
         align-items: baseline;
         justify-content: space-between;
         width: 100%;
         font-size: var(--text-sm);
       }
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 var(--space-6);
+      }
+      /* The name of the archive, in the archive's own face. It is not a
+         destination competing with the two links beside it, so it carries
+         neither their underline nor their colour. */
       .site-name {
-        font-weight: var(--weight-bold);
+        font-family: var(--font-serif);
+        font-weight: var(--weight-semibold);
+        font-size: var(--text-base);
+        color: var(--text);
+        text-decoration: none;
+      }
+      .site-name:hover {
+        color: var(--link);
       }
       /* Touch targets: 48px, the web-mobile minimum, matching the search band
          and the search page's controls. The padding does the work; the text
@@ -202,9 +217,15 @@ const syncStatus = loadSyncStatus();
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
     <header>
       <nav aria-label="Principal" data-pagefind-ignore>
+        {/* Two groups, not three peers: the name of the archive, and the places
+            you can go. Spreading all three edge to edge made the middle link
+            look stranded and gave the site name the same weight as a
+            destination. */}
         <a href="/" class="site-name">Ordenanzas del HCD</a>
-        <a href="/documentos">Todos los documentos</a>
-        <a href="/acerca">Acerca</a>
+        <span class="nav-links">
+          <a href="/documentos">Todos los documentos</a>
+          <a href="/acerca">Acerca</a>
+        </span>
       </nav>
       <SearchBand hidden={!searchBand} />
     </header>

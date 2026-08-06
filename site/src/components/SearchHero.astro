@@ -195,5 +195,11 @@ const { total, shortcuts } = Astro.props;
     .row {
       flex-direction: column;
     }
+    /* One step down: 40px is a display size for a screen wide enough to hold a
+       line of it. At 390px this headline runs to five lines and the fold eats
+       the search field it exists to introduce. */
+    .hero h1 {
+      font-size: var(--text-2xl);
+    }
   }
 </style>
