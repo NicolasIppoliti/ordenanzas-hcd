@@ -198,8 +198,13 @@ describe('the landing surfaces', () => {
     // Read each chip's count out of its own anchor and compare it to the
     // measured value. Asking whether the number appears somewhere on the page
     // would be answered by the year strip, the stats band or a doc_id.
+    // Scoped to the chip list, for the same reason the year-strip map is: a
+    // lazy match across <main> would start reading another component's
+    // `class="count"` the day a chip lost its own.
+    const chips = main.slice(main.indexOf('class="shortcuts"'));
+    const list = chips.slice(0, chips.indexOf('</ul>'));
     const rendered = new Map(
-      [...main.matchAll(/href="\/buscar\?q=([^"]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
+      [...list.matchAll(/href="\/buscar\?q=([^"]+)"[\s\S]*?class="count"[^>]*>(\d+)</g)].map(
         (match) => [decodeURIComponent(match[1] ?? ''), Number(match[2])]
       )
     );
@@ -281,7 +286,9 @@ describe('the copy speaks to a resident without pointing at the source', () => {
 
   it('states the facts that are true and verifiable', () => {
     expect(main).toContain('1.038');
-    expect(main).toContain('gratis');
+    // Case-insensitive: the word opens a sentence now, and the claim is the
+    // word, not its capitalisation.
+    expect(main.toLowerCase()).toContain('gratis');
   });
 
   it('counts documentos, never ordenanzas (D12)', () => {

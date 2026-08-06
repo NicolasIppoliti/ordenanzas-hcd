@@ -20,19 +20,22 @@ const { stats, longestPages } = Astro.props;
 // The tie can break: one more 2002 document and this is a single year, where
 // "tienen 1 documento cada uno" would be plural verb over one item. The verb and
 // "cada uno" follow how MANY years tie; the noun follows the count.
+// "2002 y 2012" for two, "2002, 2012 y 2015" for three or more. `join(' y ')`
+// alone reads correctly only for two, and both ties can grow: the archive syncs
+// weekly.
+function listYears(years: readonly number[]): string {
+  return years.length > 2
+    ? `${years.slice(0, -1).join(', ')} y ${years[years.length - 1]}`
+    : years.join(' y ');
+}
+
 const { years, count } = stats.quietestYears;
 const busiest = stats.busiestYears;
-const busiestListed =
-  busiest.years.length > 2
-    ? `${busiest.years.slice(0, -1).join(', ')} y ${busiest.years[busiest.years.length - 1]}`
-    : busiest.years.join(' y ');
+const busiestListed = listYears(busiest.years);
 const noun = count === 1 ? 'documento' : 'documentos';
 // `join(' y ')` reads correctly for two and turns into "2002 y 2012 y 2015" for
 // three. The tie can grow as well as break: the archive syncs weekly.
-const listed =
-  years.length > 2
-    ? `${years.slice(0, -1).join(', ')} y ${years[years.length - 1]}`
-    : years.join(' y ');
+const listed = listYears(years);
 const quietest =
   years.length === 1
     ? `${listed} tiene ${count.toLocaleString('es-AR')} ${noun}`
@@ -76,7 +79,12 @@ const longestSize =
       {busiest.years.length === 1 ? '' : ' cada uno'}.
       En el otro extremo, {quietest}.
     </p>
-    <a href={`/documentos#anio-${busiest.years[0]}`}>Ver {busiest.years[0]}</a>
+    {/* One anchor per tied year, rather than one link that silently picks the
+        first of them — and rather than a bare `/documentos`, which the home
+        reaches through the nav and nowhere else. */}
+    <span class="fact-links">
+      {busiest.years.map((year) => <a href={`/documentos#anio-${year}`}>Ver {year}</a>)}
+    </span>
   </li>
 </ul>
 
@@ -108,6 +116,11 @@ const longestSize =
     margin: var(--space-2) 0 0;
     font-size: var(--text-sm);
     color: var(--text-muted);
+  }
+  .fact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
   }
   .facts a {
     display: inline-flex;

@@ -39,8 +39,7 @@ const { total, shortcuts } = Astro.props;
       behind by construction. The headline states the measured thing instead. */}
   <h1 id="hero-title">Los {total} documentos del Concejo Deliberante, buscables</h1>
   <p class="sub">
-    Completos y gratis, tal como los publicó el Concejo. Sin usuario y sin tener que saber el
-    número.
+    Gratis y tal como los publicó el Concejo. Sin usuario y sin tener que saber el número.
   </p>
 
   <form class="big-search" action="/buscar" method="get" role="search">
@@ -117,6 +116,9 @@ const { total, shortcuts } = Astro.props;
     font-size: var(--text-lg);
     color: var(--text);
     background: var(--bg);
+    /* 1.5px, not the band's 1px: this control is half again as tall and sits
+       alone on the page, where a hairline edge reads as a seam rather than as a
+       field. The colour is the same measured --border-strong. */
     border: 1.5px solid var(--border-strong);
     border-radius: var(--radius-md);
     padding: var(--space-3) var(--space-4);

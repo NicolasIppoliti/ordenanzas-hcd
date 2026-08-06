@@ -215,3 +215,25 @@ describe('the quietest-year sentence when the tie breaks', () => {
     expect(html).toContain('2002, 2012 y 2015 tienen 2 documentos cada uno');
   });
 });
+
+describe('the busiest card when years tie', () => {
+  it('links every tied year, and never through a bare /documentos', async () => {
+    // The first attempt at this branch linked to `/documentos`, which the home's
+    // own test forbids inside <main> — the nav reaches it and nothing else
+    // should. Unreachable today, so nothing would have failed until the week the
+    // tie arrived.
+    const container = await AstroContainer.create();
+    const stats = {
+      ...corpusStats(documents),
+      busiestYears: { years: [2021, 2024], count: 108 },
+    };
+    const html = await container.renderToString(ArchiveFacts, {
+      props: { stats, longestPages: 207 },
+    });
+
+    expect(html).toContain('Son los años con más documentos');
+    expect(html).toContain('href="/documentos#anio-2021"');
+    expect(html).toContain('href="/documentos#anio-2024"');
+    expect(html).not.toContain('href="/documentos"');
+  });
+});
